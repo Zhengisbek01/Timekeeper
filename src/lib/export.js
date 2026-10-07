@@ -190,6 +190,29 @@ export function employeesSheet(list, companyName = '') {
   return sheet(aoa, { cols: [4, 32, 18, 24, 18, 8, 26, 17, 12, 10] })
 }
 
+// ---------- 7. День: приходы и уходы ----------
+export function daySheets(list, journal, day) {
+  const head = [[{ v: ORG_NAME, s: S.sub }], [{ v: `ПРИХОДЫ И УХОДЫ за ${fmtDate(day)}`, s: S.title }], [{ v: `Сформирован ${fmtDate(todayKey())} ${fmtTime(new Date())} в Timekeeper`, s: S.sub }], []]
+  const a = [...head]
+  a.push(['ФИО', 'Компания', 'Должность', 'График', 'Статус', 'Приход', 'Опоздание, мин', 'Уход', 'Все отметки', 'Отработано, ч', 'Замечания'].map(H))
+  list.forEach(({ emp, c }) => {
+    const firstIn = c.events.find((e) => e.kind === 'in')
+    const lastOut = [...c.events].reverse().find((e) => e.kind === 'out')
+    const st = c.absence ? `${c.absence.code}: ${CODES[c.absence.code]?.label || ''}` : c.openSince ? 'На месте' : c.events.length ? 'Ушёл' : c.scheduled ? 'Не отмечался' : 'Выходной'
+    a.push([C(emp.full_name, S.bold), C(emp.companies?.name), C(emp.position), C(`${emp.work_start.slice(0, 5)}–${emp.work_end.slice(0, 5)}`, S.center), C(st),
+      C(firstIn ? fmtTime(firstIn.ts) : '', c.lateMin ? merge(S.center, S.late) : S.center), C(c.lateMin || '', c.lateMin ? merge(S.center, S.late) : S.center),
+      C(lastOut && !c.openSince ? fmtTime(lastOut.ts) : '', S.center),
+      C(c.events.map((e) => `${e.kind === 'in' ? '→' : '←'}${fmtTime(e.ts)}${e.source === 'manual' ? '✎' : ''}`).join('  ')),
+      C(c.worked ? Number((c.worked / 60).toFixed(2)) : '', S.center), C([...c.issues, c.early ? 'Ранний уход' : ''].filter(Boolean).join('; '))])
+  })
+  const b = [...head]
+  b.push(['Время', 'ФИО', 'Компания', 'Отметка', 'Опоздание, мин', 'Источник'].map(H))
+  ;[...journal].reverse().forEach(({ e, emp, c, late }) => b.push([C(fmtTime(e.ts), late ? merge(S.center, S.late) : S.center), C(emp.full_name, S.bold), C(emp.companies?.name),
+    C(e.kind === 'in' ? 'Приход' : 'Уход', S.center), C(late ? c.lateMin : '', late ? merge(S.center, S.late) : S.center),
+    C(e.source === 'manual' ? `Вручную${e.note ? ': ' + e.note : ''}` : e.kiosks?.name || 'QR')]))
+  return [['По работникам', sheet(a, { cols: [32, 18, 22, 12, 16, 9, 13, 9, 34, 12, 26] })], ['Журнал отметок', sheet(b, { cols: [9, 32, 18, 10, 13, 30] })]]
+}
+
 // ---------- выгрузка ----------
 const fileTag = (y, m, rows) => { const c = companyLabel(rows); return `${String(m).padStart(2, '0')}_${y}${c ? '_' + c.replace(/\s+/g, '_') : ''}` }
 function save(sheets, name) {
@@ -214,6 +237,7 @@ export const REPORTS = {
       ['Отсутствия', absencesSheet(rows, y, m)], ['Отметки', marksSheet(rows, y, m)]], `Отчёт_${fileTag(y, m, rows)}.xlsx`) },
 }
 
+export const exportDay = (list, journal, day) => save(daySheets(list, journal, day), `День_${day.split('-').reverse().join('.')}.xlsx`)
 export const exportTimesheet = (rows, y, m) => REPORTS.timesheet.run(rows, y, m)
 export const exportEmployees = (list, companyName) =>
   save([['Работники', employeesSheet(list, companyName)]], `Работники_${todayKey()}.xlsx`)

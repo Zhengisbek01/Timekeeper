@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Scan from './pages/Scan'
 import Kiosk from './pages/Kiosk'
 import Me from './pages/Me'
+import PinGate from './components/PinGate'
 const Admin = lazy(() => import('./pages/admin/Admin'))
 
 function Guard({ children, admin }) {
@@ -15,7 +16,15 @@ function Guard({ children, admin }) {
   if (!session) return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />
   if (kiosk) return <Navigate to="/kiosk" replace />
   if (admin && !isAdmin) return <Navigate to="/me" replace />
-  return children
+  return <PinGate>{children}</PinGate>
+}
+
+// Отметка по QR: без входа — на страницу входа (её обрабатывает Scan), со входом — сначала код
+function ScanRoute() {
+  const { session, loading, kiosk } = useAuth()
+  if (loading) return <div className="center muted">Загрузка…</div>
+  if (!session || kiosk) return <Scan />
+  return <PinGate><Scan /></PinGate>
 }
 
 function Home() {
@@ -46,7 +55,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/kiosk" element={<Kiosk />} />
-        <Route path="/scan" element={<Scan />} />
+        <Route path="/scan" element={<ScanRoute />} />
         <Route path="/me" element={<Guard><Me /></Guard>} />
         <Route path="/admin/*" element={<Guard admin><Suspense fallback={<div className="center muted">Загрузка…</div>}><Admin /></Suspense></Guard>} />
         <Route path="*" element={<div className="center"><Link to="/">На главную</Link></div>} />

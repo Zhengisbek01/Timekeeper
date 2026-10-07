@@ -78,7 +78,6 @@ function Screen({ onSignOut }) {
   const [tok, setTok] = useState(null)
   const [err, setErr] = useState(null)
   const [now, setNow] = useState(new Date())
-  const [recent, setRecent] = useState([])
   const [left, setLeft] = useState(30)
 
   const fetchToken = useCallback(async () => {
@@ -104,12 +103,6 @@ function Screen({ onSignOut }) {
     return () => clearInterval(t)
   }, [])
 
-  useEffect(() => {
-    const pull = () => supabase.rpc('kiosk_recent').then(({ data }) => data && setRecent(data))
-    pull()
-    const t = setInterval(pull, 4000)
-    return () => clearInterval(t)
-  }, [])
 
   // экран не гаснет
   useEffect(() => {
@@ -145,15 +138,11 @@ function Screen({ onSignOut }) {
         <div className="k-side">
           <h2>Отсканируйте камерой телефона</h2>
           <p>При первом сканировании — приход, при следующем — уход. Код обновляется каждые 30 секунд.</p>
-          <ul className="k-feed">
-            {recent.map((r, i) => (
-              <li key={i} className={`${r.kind} ${r.late ? 'late' : ''}`}>
-                <span className="k-kind">{r.kind === 'in' ? (r.late ? 'Опоздание' : 'Приход') : 'Уход'}</span>
-                <span className="k-who">{r.full_name}</span>
-                <span className="k-t">{fmtTime(r.ts)}</span>
-              </li>
-            ))}
-          </ul>
+          <ol className="k-steps">
+            <li>Откройте камеру телефона или кнопку «Сканировать QR» в Timekeeper</li>
+            <li>Наведите на код слева</li>
+            <li>Нажмите на появившуюся ссылку — на телефоне появится «Приход» или «Уход»</li>
+          </ol>
         </div>
       </main>
 

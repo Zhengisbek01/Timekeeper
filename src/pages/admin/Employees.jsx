@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase, errText, normPhone, fmtPhone } from '../../lib/supabase'
 import { EMP_SELECT } from '../../lib/data'
-import { DOW_SHORT } from '../../lib/time'
+import { DOW_SHORT, todayKey } from '../../lib/time'
 import CompanySelect from '../../components/CompanySelect'
 
 const EMPTY = { email: '', phone: '', full_name: '', tab_number: '', position: '', department: '', company_id: '', role: 'employee',
-  work_start: '09:00', work_end: '18:00', break_minutes: 60, work_days: [1, 2, 3, 4, 5], active: true }
+  work_start: '09:00', work_end: '18:00', break_minutes: 60, work_days: [1, 2, 3, 4, 5], active: true, start_date: todayKey() }
 
 export default function Employees() {
   const [list, setList] = useState([])
@@ -87,6 +87,7 @@ export default function Employees() {
               <label>Начало смены<input type="time" required value={form.work_start} onChange={set('work_start')} /></label>
               <label>Окончание<input type="time" required value={form.work_end} onChange={set('work_end')} /></label>
               <label>Перерыв, мин<input type="number" min="0" value={form.break_minutes} onChange={set('break_minutes')} /></label>
+              <label>Начало учёта<input type="date" required value={form.start_date || ''} onChange={set('start_date')} /></label>
               <div className="span2">
                 <div className="small muted">Рабочие дни</div>
                 <div className="days">

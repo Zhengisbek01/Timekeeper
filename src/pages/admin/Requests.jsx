@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, errText, fmtPhone, normPhone } from '../../lib/supabase'
 import { EMP_SELECT } from '../../lib/data'
-import { fmtDateTime } from '../../lib/time'
+import { fmtDateTime, todayKey } from '../../lib/time'
 import CompanySelect from '../../components/CompanySelect'
 
 // Заявки на регистрацию: HR проверяет данные и подтверждает или отклоняет
@@ -52,7 +52,7 @@ export default function Requests({ onCount }) {
                 <td className="r nowrap">
                   {tab === 'pending' ? (
                     <>
-                      <button className="btn sm primary" onClick={() => setEdit({ ...e, work_start: e.work_start.slice(0, 5), work_end: e.work_end.slice(0, 5) })}>Проверить</button>{' '}
+                      <button className="btn sm primary" onClick={() => setEdit({ ...e, start_date: e.start_date || todayKey(), work_start: e.work_start.slice(0, 5), work_end: e.work_end.slice(0, 5) })}>Проверить</button>{' '}
                       <button className="btn sm ghost" onClick={() => confirm(`Отклонить заявку ${e.full_name}?`) && setStatus(e, 'rejected')}>Отклонить</button>
                     </>
                   ) : (
@@ -74,7 +74,7 @@ export default function Requests({ onCount }) {
             setStatus(edit, 'approved', {
               full_name: edit.full_name.trim(), phone: normPhone(edit.phone) || edit.phone || null, position: edit.position, company_id: edit.company_id || null,
               department: edit.department || null, tab_number: edit.tab_number || null,
-              work_start: edit.work_start, work_end: edit.work_end, break_minutes: +edit.break_minutes || 0,
+              work_start: edit.work_start, work_end: edit.work_end, break_minutes: +edit.break_minutes || 0, start_date: edit.start_date,
             })
           }}>
             <h3>Подтверждение работника</h3>
@@ -88,6 +88,7 @@ export default function Requests({ onCount }) {
               <label>Начало смены<input type="time" required value={edit.work_start} onChange={(ev) => setEdit({ ...edit, work_start: ev.target.value })} /></label>
               <label>Окончание<input type="time" required value={edit.work_end} onChange={(ev) => setEdit({ ...edit, work_end: ev.target.value })} /></label>
               <label>Перерыв, мин<input type="number" min="0" value={edit.break_minutes} onChange={(ev) => setEdit({ ...edit, break_minutes: ev.target.value })} /></label>
+              <label>Начало учёта<input type="date" required value={edit.start_date || ''} onChange={(ev) => setEdit({ ...edit, start_date: ev.target.value })} /></label>
               <label>Email (логин)<input disabled value={edit.email} /></label>
               <label>Телефон<input value={edit.phone || ''} onChange={(ev) => setEdit({ ...edit, phone: ev.target.value })} /></label>
             </div>

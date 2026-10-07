@@ -61,6 +61,7 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
   const startMin = timeToMin(emp.work_start)
   const schedEnd = startMin + shiftLen(emp)          // конец смены в минутах от начала дня прихода
   const workDays = emp.work_days || [1, 2, 3, 4, 5]
+  const startKey = emp.start_date || (emp.created_at ? dateKey(emp.created_at) : '')
 
   const cells = []
   const tot = { days: 0, minutes: 0, normDays: 0, normMin: 0, late: 0, lateMin: 0, early: 0, issues: 0, codes: {} }
@@ -68,7 +69,9 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
   for (let d = 1; d <= daysInMonth(y, m); d++) {
     const key = monthKey(y, m, d)
     const hol = holidaysMap[key]
-    const scheduled = hol ? hol.kind === 'workday' : workDays.includes(isoDow(key))
+    const beforeStart = startKey && key < startKey   // до начала учёта: не работал у нас / не был в системе
+    const baseScheduled = hol ? hol.kind === 'workday' : workDays.includes(isoDow(key))
+    const scheduled = !beforeStart && baseScheduled
     const info = days[key] || { intervals: [], events: [], issues: [] }
 
     let worked = info.intervals.reduce((s, [a, b]) => s + (new Date(b) - new Date(a)) / 60000, 0)
@@ -86,7 +89,8 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
     let code
     const abs = absMap[key]
     if (abs) code = abs.code
-    else if (active) code = scheduled ? 'Я' : 'РВ'
+    else if (active) code = baseScheduled ? 'Я' : 'РВ'
+    else if (beforeStart) code = ''
     else if (!scheduled) code = 'В'
     else if (key < today) code = 'НН'
     else code = ''                                  // сегодня/будущее без отметок
@@ -99,7 +103,7 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
     if (info.issues.length) tot.issues += info.issues.length
 
     cells.push({
-      key, d, code, worked, scheduled, holiday: hol, absence: abs,
+      key, d, code, worked, scheduled, beforeStart: !!beforeStart && !active, holiday: hol, absence: abs,
       events: info.events, intervals: info.intervals, issues: info.issues, openSince: info.openSince,
       lateMin: isLate && !abs ? lateMin : 0, early: !!isEarly && !abs,
     })

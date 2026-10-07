@@ -5,12 +5,14 @@ import { Brand } from '../components/Logo'
 import { buildRow, hoursStr, CODES } from '../lib/timesheet'
 import { monthRangeUtc, fmtTime, fmtDate, todayKey, DOW_SHORT, isoDow, minToHM } from '../lib/time'
 import MonthPicker from '../components/MonthPicker'
+import QrScan from '../components/QrScan'
 
 export default function Me() {
   const { employee, isAdmin, signOut, reload } = useAuth()
   const t = todayKey()
   const [ym, setYm] = useState({ y: +t.slice(0, 4), m: +t.slice(5, 7) })
   const [row, setRow] = useState(null)
+  const [scan, setScan] = useState(false)
 
   useEffect(() => {
     if (!employee || employee.status !== 'approved') return
@@ -68,6 +70,12 @@ export default function Me() {
         </div>
       </div>
 
+      <button className="btn primary block scan-btn" onClick={() => setScan(true)}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" /></svg>
+        Отметиться — сканировать QR
+      </button>
+      {scan && <QrScan onClose={() => setScan(false)} />}
+
       <div className="card">
         <div className="muted small">{[employee.companies?.name, employee.position, employee.department].filter(Boolean).join(' · ')}</div>
         <h2 style={{ margin: '4px 0 12px' }}>{employee.full_name}</h2>
@@ -85,6 +93,7 @@ export default function Me() {
           <h3>Мои отметки</h3>
           <MonthPicker value={ym} onChange={setYm} />
         </div>
+        <div className="scroll-x">
         <table className="tbl">
           <thead><tr><th>Дата</th><th>Код</th><th>Приход</th><th>Уход</th><th className="r">Часы</th></tr></thead>
           <tbody>
@@ -100,6 +109,7 @@ export default function Me() {
             {!days.length && <tr><td colSpan={5} className="muted">Нет отметок за месяц</td></tr>}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

@@ -42,10 +42,13 @@ create table if not exists public.employees (
   work_end      time not null default '18:00',
   break_minutes int  not null default 60,
   work_days     int[] not null default '{1,2,3,4,5}',   -- ISO: 1=Пн … 7=Вс
+  start_date    date not null default current_date,    -- дата начала учёта: раньше неё дни не считаются
   active        boolean not null default true,         -- false = уволен (история сохраняется)
   created_at    timestamptz not null default now()
 );
 create index if not exists employees_company_idx on public.employees (company_id);
+-- для баз, созданных ранней версией схемы
+alter table public.employees add column if not exists start_date date not null default current_date;
 
 create table if not exists public.kiosks (
   id              uuid primary key default gen_random_uuid(),

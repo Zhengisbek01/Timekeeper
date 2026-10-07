@@ -14,6 +14,8 @@ export const toUtcISO = (dayKey, hhmm) => new Date(`${dayKey}T${hhmm}:00+05:00`)
 
 export const fmtDate = (key) => { const [y, m, d] = key.split('-'); return `${d}.${m}.${y}` }
 export const timeToMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0) }
+// 12 → «12 мин», 125 → «2 ч 05 мин»
+export const durStr = (min) => { const m = Math.round(min); return m < 60 ? `${m} мин` : `${Math.floor(m / 60)} ч ${String(m % 60).padStart(2, '0')} мин` }
 export const minToHM = (min) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, '0')}`
 
 export const daysInMonth = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate()          // m: 1..12
