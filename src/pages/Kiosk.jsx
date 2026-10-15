@@ -4,6 +4,7 @@ import { supabase, errText, ORG_NAME, kioskEmail } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Logo, PRODUCT } from '../components/Logo'
 import { fmtTime, fmtDate, todayKey } from '../lib/time'
+import { useKeepAwake, useNightlyReload } from '../lib/keepAwake'
 
 // Планшет работает под отдельной учётной записью киоска
 export default function Kiosk() {
@@ -104,20 +105,21 @@ function Screen({ onSignOut }) {
   }, [])
 
 
-  // экран не гаснет
-  useEffect(() => {
-    let lock
-    const req = async () => { try { lock = await navigator.wakeLock?.request('screen') } catch {} }
-    req()
-    const vis = () => document.visibilityState === 'visible' && req()
-    document.addEventListener('visibilitychange', vis)
-    return () => { document.removeEventListener('visibilitychange', vis); lock?.release?.() }
-  }, [])
+  // экран не гаснет + ночная перезагрузка страницы
+  const { awake, needTap, enableByTap } = useKeepAwake()
+  useNightlyReload(3)
+  const goFull = () => { enableByTap(); document.documentElement.requestFullscreen?.().catch(() => {}) }
 
   const url = tok ? `${window.location.origin}/scan?k=${tok.kiosk_id}&t=${tok.token}` : ''
 
   return (
     <div className="kiosk">
+      {needTap && (
+        <button className="k-tap" onClick={goFull}>
+          <b>Коснитесь экрана</b>
+          <span>чтобы планшет не гас и показывал QR весь день</span>
+        </button>
+      )}
       <header>
         <div>
           <div className="k-org">{ORG_NAME}</div>
@@ -147,8 +149,8 @@ function Screen({ onSignOut }) {
       </main>
 
       <footer>
-        <button className="linkbtn" onClick={() => document.documentElement.requestFullscreen?.()}>Во весь экран</button>
-        <span className="k-brand"><Logo size={18} /> {PRODUCT}</span>
+        <button className="linkbtn" onClick={goFull}>Во весь экран</button>
+        <span className="k-brand"><Logo size={18} /> {PRODUCT}{awake && <span className="k-awake" title="Экран не будет гаснуть">● экран не гаснет</span>}</span>
         <button className="linkbtn" onDoubleClick={onSignOut} title="Двойной клик — выйти из учётной записи киоска">Выход</button>
       </footer>
     </div>
