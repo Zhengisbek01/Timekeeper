@@ -89,12 +89,12 @@ export default function Login() {
         )}
 
         <label>Электронная почта
-          <input type="email" required autoComplete="email" autoCapitalize="none" placeholder="name@company.kz" value={f.email} onChange={set('email')} />
+          <input type="email" name="username" required autoComplete={mode === 'up' ? 'email' : 'username'} autoCapitalize="none" placeholder="name@company.kz" value={f.email} onChange={set('email')} />
         </label>
         {mode === 'forgot' && <p className="muted small">Укажите email, с которым регистрировались, — пришлём ссылку для нового пароля.</p>}
         {mode !== 'forgot' && (
           <label>Пароль
-            <input type="password" required minLength={6} autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
+            <input type="password" name="password" required minLength={6} autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
               value={f.password} onChange={set('password')} />
           </label>
         )}

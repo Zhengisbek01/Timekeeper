@@ -48,12 +48,15 @@ export default function Reset() {
 
   return (
     <div className="center">
-      <form className="card narrow" onSubmit={submit}>
+      <form className="card narrow" onSubmit={submit} method="post" action="/reset">
         <Brand />
         <h2>Новый пароль</h2>
-        <p className="muted small">{session.user.email}</p>
+        {/* поле логина нужно, чтобы iPhone/Chrome сохранили новый пароль в связку ключей */}
+        <label>Электронная почта
+          <input type="email" name="username" autoComplete="username" value={session.user.email || ''} readOnly />
+        </label>
         <label>Новый пароль
-          <input type="password" required minLength={6} autoComplete="new-password" value={f.p1} onChange={(e) => setF({ ...f, p1: e.target.value })} />
+          <input type="password" name="new-password" required minLength={6} autoComplete="new-password" value={f.p1} onChange={(e) => setF({ ...f, p1: e.target.value })} />
         </label>
         <label>Повторите пароль
           <input type="password" required minLength={6} autoComplete="new-password" value={f.p2} onChange={(e) => setF({ ...f, p2: e.target.value })} />
