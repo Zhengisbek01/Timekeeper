@@ -19,6 +19,7 @@ code, .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 14px; }
 .card.narrow { width: 100%; max-width: 400px; }
 .row { display: flex; align-items: center; } .gap { gap: 8px; } .wrap { flex-wrap: wrap; }
+.center-x { justify-content: center; margin-top: 10px; }
 .between { justify-content: space-between; } .end { justify-content: flex-end; }
 .r { text-align: right; }
 .brand { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; letter-spacing: -.01em; }
@@ -227,3 +228,5 @@ input:disabled { background: var(--bg); color: var(--muted); }
   .hide-sm { display: none; }
   .kiosk { padding: 16px; } .k-clock { font-size: 36px; }
 }
+
+.pwd-row { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }

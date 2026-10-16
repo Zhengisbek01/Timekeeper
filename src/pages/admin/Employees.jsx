@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, errText, normPhone, fmtPhone } from '../../lib/supabase'
+import { supabase, errText, normPhone, fmtPhone, tempPassword } from '../../lib/supabase'
 import { EMP_SELECT } from '../../lib/data'
 import { DOW_SHORT, todayKey } from '../../lib/time'
 import CompanySelect from '../../components/CompanySelect'
@@ -14,6 +14,15 @@ export default function Employees() {
   const [company, setCompany] = useState('')
   const [err, setErr] = useState(null)
   const [showInactive, setShowInactive] = useState(false)
+  const [pwd, setPwd] = useState(null)   // {name, email, password} — показать HR один раз
+
+  async function resetPassword(e) {
+    if (!confirm(`Задать временный пароль для «${e.full_name}»? Старый пароль перестанет работать.`)) return
+    const password = tempPassword()
+    const { error } = await supabase.rpc('admin_set_password', { p_employee: e.id, p_password: password })
+    if (error) return setErr(errText(error))
+    setForm(null); setPwd({ name: e.full_name, email: e.email, password })
+  }
 
   const load = () => supabase.from('employees').select(EMP_SELECT).eq('status', 'approved').order('full_name').then(({ data }) => setList(data || []))
   useEffect(() => { load() }, [])
@@ -99,11 +108,32 @@ export default function Employees() {
               <label className="inline span2"><input type="checkbox" checked={form.active} onChange={set('active')} /> Работает (снимите при увольнении — история сохранится)</label>
             </div>
             {err && <div className="alert err">{err}</div>}
+            {form.id && form.user_id && (
+              <div className="row between wrap gap pwd-row">
+                <span className="muted small">Забыл пароль и письмо не пришло?</span>
+                <button type="button" className="btn sm ghost" onClick={() => resetPassword(form)}>Задать временный пароль</button>
+              </div>
+            )}
             <div className="row gap end">
               <button type="button" className="btn ghost" onClick={() => setForm(null)}>Отмена</button>
               <button className="btn primary">Сохранить</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {pwd && (
+        <div className="modal-bg" onClick={() => setPwd(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Временный пароль</h3>
+            <p className="muted">{pwd.name}</p>
+            <dl className="kv big">
+              <dt>Email</dt><dd className="mono">{pwd.email}</dd>
+              <dt>Пароль</dt><dd className="mono">{pwd.password}</dd>
+            </dl>
+            <p className="muted small">Сообщите лично или по телефону. Работник может сменить его сам: «Забыли пароль?» на странице входа. Пароль показан один раз.</p>
+            <div className="row end"><button className="btn primary" onClick={() => setPwd(null)}>Готово</button></div>
+          </div>
         </div>
       )}
     </div>

@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// Пришли по ссылке «восстановить пароль» из письма (запоминаем до того, как клиент очистит адрес)
+export const recoveryLink = typeof window !== 'undefined' &&
+  /type=recovery/.test(window.location.hash + window.location.search)
+
 export const configured = Boolean(url && key)
 export const supabase = configured ? createClient(url, key) : null
 export const ORG_NAME = import.meta.env.VITE_ORG_NAME || 'Учёт рабочего времени'
@@ -38,6 +42,13 @@ const ERRORS = {
   'Email not confirmed': 'Email не подтверждён. Откройте письмо от системы.',
   'Password should be at least': 'Пароль должен быть не короче 6 символов',
   'kiosks_login_key': 'Киоск с таким логином уже есть',
+  NO_ACCOUNT: 'Работник ещё не зарегистрировался — пароля пока нет',
+  KIOSK_NOT_ACTIVATED: 'Киоск ещё не активирован — используйте код активации',
+  WEAK_PASSWORD: 'Пароль должен быть не короче 6 символов',
+  'rate limit': 'Слишком много запросов. Подождите и попробуйте позже или обратитесь в отдел кадров.',
+  'For security purposes': 'Повторный запрос можно отправить через минуту',
+  'New password should be different': 'Новый пароль должен отличаться от старого',
+  'Auth session missing': 'Ссылка недействительна или устарела. Запросите новую.',
   'Email address': 'Сервер отклонил email. Проверьте адрес (для киоска — переменную VITE_LOGIN_DOMAIN, см. README).',
 }
 
@@ -45,4 +56,10 @@ export function errText(err) {
   const msg = err?.message || String(err)
   for (const k of Object.keys(ERRORS)) if (msg.includes(k)) return ERRORS[k]
   return msg
+}
+
+// Временный пароль, который HR сообщает работнику (без похожих символов 0/O, 1/l/I)
+export function tempPassword(len = 8) {
+  const abc = 'abcdefghjkmnpqrstuvwxyz23456789'
+  return Array.from(crypto.getRandomValues(new Uint8Array(len)), (b) => abc[b % abc.length]).join('')
 }

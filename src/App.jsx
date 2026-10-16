@@ -1,11 +1,12 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
-import { configured } from './lib/supabase'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { configured, recoveryLink } from './lib/supabase'
 import { AuthProvider, useAuth } from './lib/auth'
 import Login from './pages/Login'
 import Scan from './pages/Scan'
 import Kiosk from './pages/Kiosk'
 import Me from './pages/Me'
+import Reset from './pages/Reset'
 import PinGate from './components/PinGate'
 const Admin = lazy(() => import('./pages/admin/Admin'))
 
@@ -52,13 +53,19 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={recoveryLink ? <Navigate to={'/reset' + window.location.search + window.location.hash} replace /> : <Home />} />
         <Route path="/login" element={<Login />} />
+        {/* привычные адреса регистрации и входа */}
+        {['/register', '/registration', '/signup', '/sign-up', '/reg'].map((p) => <Route key={p} path={p} element={<Navigate to="/login?mode=up" replace />} />)}
+        {['/signin', '/sign-in', '/auth'].map((p) => <Route key={p} path={p} element={<Navigate to="/login" replace />} />)}
+        <Route path="/reset" element={<Reset />} />
+        <Route path="/forgot" element={<Navigate to="/login?mode=forgot" replace />} />
         <Route path="/kiosk" element={<Kiosk />} />
         <Route path="/scan" element={<ScanRoute />} />
         <Route path="/me" element={<Guard><Me /></Guard>} />
         <Route path="/admin/*" element={<Guard admin><Suspense fallback={<div className="center muted">Загрузка…</div>}><Admin /></Suspense></Guard>} />
-        <Route path="*" element={<div className="center"><Link to="/">На главную</Link></div>} />
+        {/* неизвестный адрес — сразу на нужный экран (вход / мои отметки / админка) */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
   )

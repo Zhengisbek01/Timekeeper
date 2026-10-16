@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, errText } from '../../lib/supabase'
+import { supabase, errText, tempPassword } from '../../lib/supabase'
 
 // Киоск = отдельная учётная запись планшета (логин + пароль), активируется кодом
 export default function Kiosks() {
@@ -23,6 +23,13 @@ export default function Kiosks() {
     const { data, error } = await supabase.rpc('kiosk_reset', { p_kiosk: k.id })
     if (error) return setErr(errText(error))
     setShown({ name: k.name, login: k.login, code: data }); load()
+  }
+  const setPassword = async (k) => {
+    if (!confirm(`Задать новый пароль для киоска «${k.name}»?`)) return
+    const password = tempPassword()
+    const { error } = await supabase.rpc('kiosk_set_password', { p_kiosk: k.id, p_password: password })
+    if (error) return setErr(errText(error))
+    setShown({ name: k.name, login: k.login, password, activated: Boolean(k.user_id), code: k.user_id ? null : k.activation_code })
   }
   const toggle = async (k) => {
     const { error } = await supabase.from('kiosks').update({ active: !k.active }).eq('id', k.id)
@@ -52,6 +59,7 @@ export default function Kiosks() {
                   : <span className="pill st-abs">ждёт активации · код {k.activation_code}</span>}
               </td>
               <td className="r nowrap">
+                <button className="btn sm ghost" onClick={() => setPassword(k)}>Пароль</button>{' '}
                 <button className="btn sm ghost" onClick={() => reset(k)}>Сбросить</button>{' '}
                 <button className="btn sm ghost" onClick={() => toggle(k)}>{k.active ? 'Отключить' : 'Включить'}</button>
               </td>
@@ -64,13 +72,16 @@ export default function Kiosks() {
       {shown && (
         <div className="modal-bg" onClick={() => setShown(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Активация киоска «{shown.name}»</h3>
-            <p className="muted">На планшете: <code>{window.location.origin}/kiosk</code> → «Активация».</p>
+            <h3>{shown.password ? `Новый пароль киоска «${shown.name}»` : `Активация киоска «${shown.name}»`}</h3>
+            <p className="muted">На планшете: <code>{window.location.origin}/kiosk</code> → {shown.password && shown.activated ? '«Вход»' : '«Активация»'}.</p>
             <dl className="kv big">
               <dt>Логин</dt><dd className="mono">{shown.login}</dd>
-              <dt>Код</dt><dd className="mono">{shown.code}</dd>
+              {shown.code && <><dt>Код</dt><dd className="mono">{shown.code}</dd></>}
+              {shown.password && <><dt>Пароль</dt><dd className="mono">{shown.password}</dd></>}
             </dl>
-            <p className="muted small">Код одноразовый. Пароль придумывается на планшете при активации.</p>
+            <p className="muted small">{shown.password
+              ? (shown.activated ? 'Введите логин и этот пароль. Пароль показан один раз.' : 'Введите логин, код и этот пароль (в оба поля пароля).')
+              : 'Код одноразовый. Пароль придумывается на планшете при активации. Если планшет уже активировали раньше — после кода введите прежний пароль киоска или задайте новый кнопкой «Пароль».'}</p>
             <div className="row end"><button className="btn primary" onClick={() => setShown(null)}>Готово</button></div>
           </div>
         </div>
