@@ -21,6 +21,10 @@ export const MANUAL_CODES = Object.keys(CODES).filter((c) => !CODES[c].auto)
 const GRACE_MIN = 5            // допуск на опоздание, мин
 const AUTO_BREAK_FROM = 300    // вычитать обед, если одна непрерывная сессия дольше 5 ч
 const OPEN_SESSION_H = 16      // незакрытый приход старше 16 ч — аномалия
+// В табель идёт время только в рамках графика: ранний приход и поздний уход часов не добавляют,
+// опоздание и ранний уход — уменьшают. Полный день по графику = норма (например, 8 ч).
+// В выходные/праздники (РВ) считается фактическое время.
+const COUNT_BY_SCHEDULE = true
 
 // Длительность смены с учётом ночных графиков (22:00–06:00)
 const shiftLen = (emp) => { const d = timeToMin(emp.work_end) - timeToMin(emp.work_start); return d > 0 ? d : d + 1440 }
@@ -74,9 +78,21 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
     const scheduled = !beforeStart && baseScheduled
     const info = days[key] || { intervals: [], events: [], issues: [] }
 
-    let worked = info.intervals.reduce((s, [a, b]) => s + (new Date(b) - new Date(a)) / 60000, 0)
-    if (info.intervals.length === 1 && worked > AUTO_BREAK_FROM) worked -= emp.break_minutes || 0
-    worked = Math.max(0, Math.round(worked))
+    // фактическое время на работе
+    let actual = info.intervals.reduce((s, [a, b]) => s + (new Date(b) - new Date(a)) / 60000, 0)
+    if (info.intervals.length === 1 && actual > AUTO_BREAK_FROM) actual -= emp.break_minutes || 0
+    actual = Math.max(0, Math.round(actual))
+
+    // время в табель: пересечение отметок с окном графика, минус обед, не больше нормы
+    let worked = actual
+    if (COUNT_BY_SCHEDULE && baseScheduled && info.intervals.length) {
+      const day0 = Date.parse(`${key}T00:00:00+05:00`)
+      const w0 = day0 + startMin * 60000, w1 = day0 + schedEnd * 60000
+      let inWin = info.intervals.reduce((s, [a, b]) =>
+        s + Math.max(0, Math.min(Date.parse(b), w1) - Math.max(Date.parse(a), w0)) / 60000, 0)
+      if (info.intervals.length === 1 && inWin > AUTO_BREAK_FROM) inWin -= emp.break_minutes || 0
+      worked = Math.min(norm, Math.max(0, Math.round(inWin)))
+    }
 
     const firstIn = info.intervals[0]?.[0] || info.openSince
     const lateMin = scheduled && firstIn ? Math.max(0, minutesOfDay(firstIn) - startMin) : 0
@@ -103,7 +119,7 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
     if (info.issues.length) tot.issues += info.issues.length
 
     cells.push({
-      key, d, code, worked, scheduled, beforeStart: !!beforeStart && !active, holiday: hol, absence: abs,
+      key, d, code, worked, actual, scheduled, beforeStart: !!beforeStart && !active, holiday: hol, absence: abs,
       events: info.events, intervals: info.intervals, issues: info.issues, openSince: info.openSince,
       lateMin: isLate && !abs ? lateMin : 0, early: !!isEarly && !abs,
     })
