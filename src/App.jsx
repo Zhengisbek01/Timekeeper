@@ -7,7 +7,6 @@ import Scan from './pages/Scan'
 import Kiosk from './pages/Kiosk'
 import Me from './pages/Me'
 import Reset from './pages/Reset'
-import PinGate from './components/PinGate'
 const Admin = lazy(() => import('./pages/admin/Admin'))
 
 function Guard({ children, admin }) {
@@ -17,15 +16,14 @@ function Guard({ children, admin }) {
   if (!session) return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />
   if (kiosk) return <Navigate to="/kiosk" replace />
   if (admin && !isAdmin) return <Navigate to="/me" replace />
-  return <PinGate>{children}</PinGate>
+  return children
 }
 
-// Отметка по QR: без входа — на страницу входа (её обрабатывает Scan), со входом — сначала код
+// Отметка по QR: без входа Scan сам отправит на страницу входа
 function ScanRoute() {
-  const { session, loading, kiosk } = useAuth()
+  const { loading } = useAuth()
   if (loading) return <div className="center muted">Загрузка…</div>
-  if (!session || kiosk) return <Scan />
-  return <PinGate><Scan /></PinGate>
+  return <Scan />
 }
 
 function Home() {
