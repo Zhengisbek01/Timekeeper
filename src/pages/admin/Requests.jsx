@@ -35,7 +35,7 @@ export default function Requests({ onCount }) {
           <button className={tab === 'pending' ? 'on' : ''} onClick={() => setTab('pending')}>Новые ({(list || []).filter((e) => e.status === 'pending').length})</button>
           <button className={tab === 'rejected' ? 'on' : ''} onClick={() => setTab('rejected')}>Отклонённые</button>
         </div>
-        <span className="muted small">Ссылка для регистрации работников: <code>{window.location.origin}/login?mode=up</code></span>
+        <span className="muted small">Регистрация: <code>{window.location.origin}/login?mode=up</code> · Установка приложения: <code>{window.location.origin}/install</code></span>
       </div>
       {err && <div className="alert err">{err}</div>}
       <div className="scroll-x">

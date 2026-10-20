@@ -1,1 +1,26 @@
-{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "timekeeper-kappa-gilt.vercel.app" }],
+      "destination": "https://mkatk.kz/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.mkatk.kz" }],
+      "destination": "https://mkatk.kz/:path*",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/manifest.webmanifest", "headers": [{ "key": "Content-Type", "value": "application/manifest+json" }] },
+    { "source": "/.well-known/assetlinks.json", "headers": [{ "key": "Content-Type", "value": "application/json" }] },
+    { "source": "/timekeeper.apk", "headers": [
+      { "key": "Content-Type", "value": "application/vnd.android.package-archive" },
+      { "key": "Content-Disposition", "value": "attachment; filename=\"timekeeper.apk\"" }
+    ] }
+  ],
+  "rewrites": [{ "source": "/((?!\\.well-known/)(?!timekeeper\\.apk).*)", "destination": "/index.html" }]
+}

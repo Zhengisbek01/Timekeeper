@@ -6,6 +6,7 @@ import { buildRow, hoursStr, CODES } from '../lib/timesheet'
 import { monthRangeUtc, fmtTime, fmtDate, todayKey, DOW_SHORT, isoDow, minToHM } from '../lib/time'
 import MonthPicker from '../components/MonthPicker'
 import QrScan from '../components/QrScan'
+import InstallBanner from '../components/InstallBanner'
 
 export default function Me() {
   const { employee, isAdmin, signOut, reload } = useAuth()
@@ -70,6 +71,7 @@ export default function Me() {
         </div>
       </div>
 
+      <InstallBanner />
       <button className="btn primary block scan-btn" onClick={() => setScan(true)}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" /></svg>
         Отметиться — сканировать QR

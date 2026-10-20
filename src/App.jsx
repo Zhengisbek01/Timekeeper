@@ -7,6 +7,7 @@ import Scan from './pages/Scan'
 import Kiosk from './pages/Kiosk'
 import Me from './pages/Me'
 import Reset from './pages/Reset'
+import Install from './pages/Install'
 const Admin = lazy(() => import('./pages/admin/Admin'))
 
 function Guard({ children, admin }) {
@@ -57,6 +58,8 @@ export default function App() {
         {['/register', '/registration', '/signup', '/sign-up', '/reg'].map((p) => <Route key={p} path={p} element={<Navigate to="/login?mode=up" replace />} />)}
         {['/signin', '/sign-in', '/auth'].map((p) => <Route key={p} path={p} element={<Navigate to="/login" replace />} />)}
         <Route path="/reset" element={<Reset />} />
+        <Route path="/install" element={<Install />} />
+        <Route path="/app" element={<Navigate to="/install" replace />} />
         <Route path="/forgot" element={<Navigate to="/login?mode=forgot" replace />} />
         <Route path="/kiosk" element={<Kiosk />} />
         <Route path="/scan" element={<ScanRoute />} />

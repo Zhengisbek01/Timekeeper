@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, errText, ORG_NAME, normPhone } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Brand } from '../components/Logo'
+import InstallBanner from '../components/InstallBanner'
 
 export default function Login() {
   const [params] = useSearchParams()
@@ -57,6 +58,8 @@ export default function Login() {
 
   return (
     <div className="center">
+      <div className="login-wrap">
+      <InstallBanner />
       <form className="card narrow" onSubmit={submit}>
         <Brand />
         <p className="muted small">{ORG_NAME}</p>
@@ -115,6 +118,7 @@ export default function Login() {
         {mode === 'in' && <div className="row center-x"><button type="button" className="linkbtn" onClick={() => go('forgot')}>Забыли пароль?</button></div>}
         {mode === 'forgot' && <div className="row center-x"><button type="button" className="linkbtn" onClick={() => go('in')}>← Назад ко входу</button></div>}
       </form>
+      </div>
     </div>
   )
 }

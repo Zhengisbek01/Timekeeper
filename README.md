@@ -84,3 +84,10 @@ HR: «Киоски» → название + логин (например `kiosk-
 - Встроенная почта Supabase шлёт мало писем (и не всем адресам) — для работы подключите свой SMTP: Authentication → Emails → SMTP Settings.
 - HR: «Работники» → изменить → «Задать временный пароль». Киоск: «Киоски» → «Пароль».
 - Функции для этого — в `supabase/update-passwords.sql` (уже включены в `schema.sql`).
+
+## Приложение на телефон
+- Ссылка для работников: `https://<домен>/install` (QR-код на ней же при открытии с компьютера).
+- iPhone: Safari → «Поделиться» → «На экран „Домой“» (PWA).
+- Android APK: pwabuilder.com → адрес сайта → Package For Stores → Android → **Other Android** → Package ID `kz.mkatk.timekeeper` → Download.
+  Из архива: `*.apk` → `public/timekeeper.apk`, `assetlinks.json` → `public/.well-known/assetlinks.json`.
+  **signing.keystore и signing-key-info.txt сохраните** — без них не выпустить обновление APK.
