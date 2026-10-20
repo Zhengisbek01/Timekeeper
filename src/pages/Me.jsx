@@ -3,7 +3,7 @@ import { supabase, fmtPhone } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Brand } from '../components/Logo'
 import { buildRow, hoursStr, CODES } from '../lib/timesheet'
-import { monthRangeUtc, fmtTime, fmtDate, todayKey, DOW_SHORT, isoDow, minToHM } from '../lib/time'
+import { monthRangeUtc, fmtDate, todayKey, DOW_SHORT, isoDow, minToHM } from '../lib/time'
 import MonthPicker from '../components/MonthPicker'
 import QrScan from '../components/QrScan'
 import InstallBanner from '../components/InstallBanner'
@@ -82,7 +82,7 @@ export default function Me() {
         <div className="muted small">{[employee.companies?.name, employee.position, employee.department].filter(Boolean).join(' · ')}</div>
         <h2 style={{ margin: '4px 0 12px' }}>{employee.full_name}</h2>
         <div className="stats">
-          <Stat label="Сегодня" value={today?.openSince ? `На работе с ${fmtTime(today.openSince)}` : today?.events.length ? `${hoursStr(today.worked) || 0} ч` : '—'} />
+          <Stat label="Сегодня" value={today?.openSince ? 'На работе' : today?.events.length ? `${hoursStr(today.worked) || 0} ч` : '—'} />
           <Stat label="Дней явок" value={row?.tot.days ?? '…'} sub={`из ${row?.tot.normDays ?? '…'}`} />
           <Stat label="Отработано" value={row ? `${hoursStr(row.tot.minutes) || 0} ч` : '…'} sub={`норма ${row ? hoursStr(row.tot.normMin) : '…'} ч`} />
           <Stat label="Опозданий" value={row?.tot.late ?? '…'} sub={row?.tot.lateMin ? minToHM(row.tot.lateMin) : ''} />
@@ -92,23 +92,22 @@ export default function Me() {
 
       <div className="card">
         <div className="row between">
-          <h3>Мои отметки</h3>
+          <h3>Мой табель</h3>
           <MonthPicker value={ym} onChange={setYm} />
         </div>
         <div className="scroll-x">
         <table className="tbl">
-          <thead><tr><th>Дата</th><th>Код</th><th>Приход</th><th>Уход</th><th className="r">Часы</th></tr></thead>
+          <thead><tr><th>Дата</th><th>Код</th><th></th><th className="r">Часы</th></tr></thead>
           <tbody>
             {days.map((c) => (
               <tr key={c.key} className={c.lateMin ? 'late' : ''}>
                 <td>{fmtDate(c.key).slice(0, 5)} <span className="muted">{DOW_SHORT[isoDow(c.key)]}</span></td>
                 <td><span className={`code c-${c.code}`} title={CODES[c.code]?.label}>{c.code}</span></td>
-                <td>{c.events.filter((e) => e.kind === 'in').map((e) => fmtTime(e.ts)).join(', ')}{c.lateMin ? <span className="tag red"> +{c.lateMin} мин</span> : ''}</td>
-                <td>{c.events.filter((e) => e.kind === 'out').map((e) => fmtTime(e.ts)).join(', ')}{c.issues.length ? <span className="tag amber"> {c.issues[0]}</span> : ''}</td>
+                <td>{c.lateMin ? <span className="tag red">опоздание</span> : ''}{c.issues.length ? <span className="tag amber"> {c.issues[0]}</span> : ''}</td>
                 <td className="r">{hoursStr(c.worked)}</td>
               </tr>
             ))}
-            {!days.length && <tr><td colSpan={5} className="muted">Нет отметок за месяц</td></tr>}
+            {!days.length && <tr><td colSpan={4} className="muted">Нет отметок за месяц</td></tr>}
           </tbody>
         </table>
         </div>
