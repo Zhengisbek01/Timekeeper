@@ -50,7 +50,7 @@ export default function Today() {
   }, [day, load])
 
   // отработано с учётом незакрытой сессии (человек сейчас на месте)
-  const workedNow = (c) => c.worked + (c.openSince ? Math.max(0, Math.round((now - new Date(c.openSince)) / 60000)) : 0)
+  const workedNow = (c) => c.actual + (c.openSince ? Math.max(0, Math.round((now - new Date(c.openSince)) / 60000)) : 0)
 
   const scoped = rows.filter(({ emp }) => !company || emp.company_id === company)
   const cnt = { here: 0, left: 0, none: 0, abs: 0, late: 0, early: 0 }
