@@ -162,10 +162,22 @@ export function summarySheet(rows, y, m) {
   return sheet(aoa, { cols: [22, 11, 13, 13, 10, 12, 11, 13, 7, 12, 11, 7, 14] })
 }
 
+// выходы в рабочее время: «12:10–13:40 Личные дела»
+function exitsStr(c) {
+  const out = []
+  c.events.forEach((e, i) => {
+    if (e.kind !== 'out' || !e.reason) return
+    const back = c.events.slice(i + 1).find((x) => x.kind === 'in')
+    out.push(`${fmtTime(e.ts)}–${back ? fmtTime(back.ts) : '…'} ${e.reason}`)
+  })
+  if (c.noReason) out.push(`без причины: ${c.noReason}`)
+  return out.join('; ')
+}
+
 // ---------- 5. Отметки (детализация) ----------
 export function marksSheet(rows, y, m) {
   const aoa = titleRows('ЖУРНАЛ ОТМЕТОК', y, m, companyLabel(rows))
-  aoa.push(['ФИО', 'Компания', 'Таб. №', 'Дата', 'Приход', 'Уход', 'Факт, ч', 'В табель, ч', 'Опоздание, мин', 'Ручные отметки', 'Замечания'].map(H))
+  aoa.push(['ФИО', 'Компания', 'Таб. №', 'Дата', 'Приход', 'Уход', 'Факт, ч', 'В табель, ч', 'Опоздание, мин', 'Выходы в рабочее время', 'Ручные отметки', 'Замечания'].map(H))
   rows.forEach((r) => r.cells.forEach((c) => {
     if (!c.events.length && !c.absence) return
     const ins = c.events.filter((e) => e.kind === 'in').map((e) => fmtTime(e.ts)).join(', ')
@@ -174,10 +186,10 @@ export function marksSheet(rows, y, m) {
     aoa.push([C(r.emp.full_name, S.bold), C(companyOf(r)), C(r.emp.tab_number, S.center), C(fmtDate(c.key), S.center),
       C(ins, c.lateMin ? merge(S.center, S.late) : S.center), C(outs, S.center), C(c.actual ? Number((c.actual / 60).toFixed(2)) : '', S.center),
       C(c.worked ? Number((c.worked / 60).toFixed(2)) : '', S.center),
-      C(c.lateMin || '', c.lateMin ? merge(S.center, S.late) : S.center), C(manual),
+      C(c.lateMin || '', c.lateMin ? merge(S.center, S.late) : S.center), C(exitsStr(c)), C(manual),
       C([c.absence ? `${c.absence.code}: ${CODES[c.absence.code]?.label || ''}` : '', ...c.issues, c.early ? 'Ранний уход' : ''].filter(Boolean).join('; '))])
   }))
-  return sheet(aoa, { cols: [32, 18, 8, 11, 14, 14, 9, 11, 13, 26, 40] })
+  return sheet(aoa, { cols: [32, 18, 8, 11, 14, 14, 9, 11, 13, 36, 26, 40] })
 }
 
 // ---------- 6. Список работников ----------
@@ -203,7 +215,7 @@ export function daySheets(list, journal, day) {
     a.push([C(emp.full_name, S.bold), C(emp.companies?.name), C(emp.position), C(`${emp.work_start.slice(0, 5)}–${emp.work_end.slice(0, 5)}`, S.center), C(st),
       C(firstIn ? fmtTime(firstIn.ts) : '', c.lateMin ? merge(S.center, S.late) : S.center), C(c.lateMin || '', c.lateMin ? merge(S.center, S.late) : S.center),
       C(lastOut && !c.openSince ? fmtTime(lastOut.ts) : '', S.center),
-      C(c.events.map((e) => `${e.kind === 'in' ? '→' : '←'}${fmtTime(e.ts)}${e.source === 'manual' ? '✎' : ''}`).join('  ')),
+      C(c.events.map((e) => `${e.kind === 'in' ? '→' : '←'}${fmtTime(e.ts)}${e.source === 'manual' ? '✎' : ''}${e.reason ? ` (${e.reason})` : ''}`).join('  ')),
       C(c.actual ? Number((c.actual / 60).toFixed(2)) : '', S.center),
       C(c.worked ? Number((c.worked / 60).toFixed(2)) : '', S.center), C([...c.issues, c.early ? 'Ранний уход' : ''].filter(Boolean).join('; '))])
   })

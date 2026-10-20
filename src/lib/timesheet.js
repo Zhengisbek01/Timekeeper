@@ -18,7 +18,19 @@ export const CODES = {
 }
 export const MANUAL_CODES = Object.keys(CODES).filter((c) => !CODES[c].auto)
 
-const GRACE_MIN = 5            // допуск на опоздание, мин
+// Причины выхода в рабочее время (работник выбирает после сканирования «Уход»)
+export const EXIT_REASONS = [
+  { id: 'work', label: 'По работе', hint: 'служебный выезд — время засчитывается' },
+  { id: 'lunch', label: 'Обед' },
+  { id: 'personal', label: 'Личные дела' },
+  { id: 'medical', label: 'Поликлиника / больница' },
+  { id: 'home', label: 'Ухожу домой' },
+  { id: 'other', label: 'Другое' },
+]
+export const isWorkExit = (e) => e?.kind === 'out' && /^По работе/.test(e.reason || '')
+export const isHomeExit = (e) => e?.kind === 'out' && /^Ухожу домой/.test(e.reason || '')
+
+export const GRACE_MIN = 5     // допуск на опоздание, мин
 const AUTO_BREAK_FROM = 300    // вычитать обед, если одна непрерывная сессия дольше 5 ч
 const OPEN_SESSION_H = 16      // незакрытый приход старше 16 ч — аномалия
 // В табель идёт время только в рамках графика: ранний приход и поздний уход часов не добавляют,
@@ -36,13 +48,18 @@ export function buildDays(events) {
   const days = {}
   const day = (k) => (days[k] ||= { intervals: [], events: [], issues: [] })
   let open = null
+  let lastOut = null   // последний уход: если он был «По работе», выход засчитывается как рабочее время
   for (const ev of sorted) {
     day(dateKey(ev.ts)).events.push(ev)
     if (ev.kind === 'in') {
       if (open) day(dateKey(open.ts)).issues.push('Приход без ухода')
-      open = ev
+      const back = lastOut && isWorkExit(lastOut.ev) && dateKey(lastOut.from) === dateKey(ev.ts) ? lastOut : null
+      if (back) { day(dateKey(back.from)).intervals.pop(); open = { ts: back.from } }   // склеиваем интервалы
+      else open = ev
+      lastOut = null
     } else if (open) {
       day(dateKey(open.ts)).intervals.push([open.ts, ev.ts])
+      lastOut = { ev, from: open.ts }
       open = null
     } else {
       day(dateKey(ev.ts)).issues.push('Уход без прихода')
@@ -122,6 +139,11 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
       key, d, code, worked, actual, scheduled, beforeStart: !!beforeStart && !active, holiday: hol, absence: abs,
       events: info.events, intervals: info.intervals, issues: info.issues, openSince: info.openSince,
       lateMin: isLate && !abs ? lateMin : 0, early: !!isEarly && !abs,
+      // вышел в рабочее время и ещё не вернулся
+      away: (() => { const l = info.events[info.events.length - 1]; return l?.kind === 'out' && l.reason && !isHomeExit(l) ? l : null })(),
+      // уходы в рабочее время без указанной причины
+      noReason: scheduled ? info.events.filter((e) => e.kind === 'out' && !e.reason && e.source === 'qr' &&
+        minutesOfDay(e.ts) + (dateKey(e.ts) > key ? 1440 : 0) < schedEnd - GRACE_MIN).length : 0,
     })
   }
   return { emp, cells, tot }

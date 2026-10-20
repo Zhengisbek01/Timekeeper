@@ -6,10 +6,11 @@ import DayEditor from '../../components/DayEditor'
 import CompanySelect from '../../components/CompanySelect'
 import { EMP_SELECT } from '../../lib/data'
 
-const LABEL = { here: 'На месте', left: 'Ушёл', none: 'Не отмечался', abs: 'Отсутствует', off: 'Выходной' }
+const LABEL = { here: 'На месте', away: 'Вышел', left: 'Ушёл', none: 'Не отмечался', abs: 'Отсутствует', off: 'Выходной' }
 const status = (c) => {
   if (c.absence) return 'abs'
   if (c.openSince) return 'here'
+  if (c.away) return 'away'
   if (c.events.length) return 'left'
   if (c.scheduled) return 'none'
   return 'off'
@@ -53,7 +54,7 @@ export default function Today() {
   const workedNow = (c) => c.actual + (c.openSince ? Math.max(0, Math.round((now - new Date(c.openSince)) / 60000)) : 0)
 
   const scoped = rows.filter(({ emp }) => !company || emp.company_id === company)
-  const cnt = { here: 0, left: 0, none: 0, abs: 0, late: 0, early: 0 }
+  const cnt = { here: 0, away: 0, left: 0, none: 0, abs: 0, late: 0, early: 0, off: 0 }
   scoped.forEach(({ c }) => { cnt[status(c)]++; if (c.lateMin) cnt.late++; if (c.early) cnt.early++ })
 
   const match = (emp) => !q || [emp.full_name, emp.position, emp.department].join(' ').toLowerCase().includes(q.toLowerCase())
@@ -70,8 +71,8 @@ export default function Today() {
 
   return (
     <>
-      <div className="stats six">
-        {[['here', 'На месте'], ['left', 'Ушли'], ['late', 'Опоздали'], ['early', 'Ранний уход'], ['none', 'Не отмечались'], ['abs', 'Отсутствуют']].map(([k, l]) => (
+      <div className="stats seven">
+        {[['here', 'На месте'], ['away', 'Вышли'], ['left', 'Ушли'], ['late', 'Опоздали'], ['early', 'Ранний уход'], ['none', 'Не отмечались'], ['abs', 'Отсутствуют']].map(([k, l]) => (
           <button key={k} className={`stat clickable s-${k} ${filter === k ? 'on' : ''}`} onClick={() => { setFilter(filter === k ? 'all' : k); setView('people') }}>
             <div className="muted small">{l}</div><div className="v">{cnt[k] || 0}</div>
           </button>
@@ -114,7 +115,8 @@ export default function Today() {
                       <td><b>{emp.full_name}</b><div className="muted small">{[emp.position, emp.department].filter(Boolean).join(' · ')}</div></td>
                       <td className="small">{emp.companies?.name}</td>
                       <td className="small nowrap">{emp.work_start.slice(0, 5)}–{emp.work_end.slice(0, 5)}</td>
-                      <td><span className={`pill st-${st}`}>{st === 'abs' ? `${c.absence.code} · ${CODES[c.absence.code]?.label || ''}` : LABEL[st]}</span></td>
+                      <td><span className={`pill st-${st}`}>{st === 'abs' ? `${c.absence.code} · ${CODES[c.absence.code]?.label || ''}` : LABEL[st]}</span>
+                        {st === 'away' && <div className="small muted">{c.away.reason} · с {fmtTime(c.away.ts)}</div>}</td>
                       <td className="nowrap">
                         {firstIn ? <b className={c.lateMin ? 'late-time' : ''}>{fmtTime(firstIn.ts)}</b> : <span className="muted">—</span>}
                         {c.lateMin ? <div className="tag red">опоздание {durStr(c.lateMin)}</div> : null}
@@ -126,11 +128,12 @@ export default function Today() {
                       <td>
                         <div className="marks">
                           {c.events.map((e) => (
-                            <span key={e.id} className={`mark ${e.kind} ${e.source === 'manual' ? 'manual' : ''}`} title={`${e.kind === 'in' ? 'Приход' : 'Уход'} · ${source(e)}`}>
-                              {e.kind === 'in' ? '→' : '←'} {fmtTime(e.ts)}{e.source === 'manual' ? ' ✎' : ''}
+                            <span key={e.id} className={`mark ${e.kind} ${e.source === 'manual' ? 'manual' : ''}`} title={`${e.kind === 'in' ? 'Приход' : 'Уход'} · ${source(e)}${e.reason ? ' · ' + e.reason : ''}`}>
+                              {e.kind === 'in' ? '→' : '←'} {fmtTime(e.ts)}{e.source === 'manual' ? ' ✎' : ''}{e.reason ? <span className="why"> · {e.reason}</span> : null}
                             </span>
                           ))}
                           {c.issues.map((s) => <span key={s} className="tag amber">{s}</span>)}
+                          {c.noReason ? <span className="tag amber">уход без причины{c.noReason > 1 ? ` ×${c.noReason}` : ''}</span> : null}
                           {!c.events.length && <span className="muted small">—</span>}
                         </div>
                       </td>
@@ -155,6 +158,7 @@ export default function Today() {
                     <td className="small">{emp.companies?.name}</td>
                     <td className="nowrap">
                       <span className={`pill ${e.kind}`}>{e.kind === 'in' ? 'Приход' : 'Уход'}</span>
+                      {e.reason ? <span className="small"> · {e.reason}</span> : null}
                       {late ? <span className="tag red"> опоздание {durStr(c.lateMin)}</span> : null}
                     </td>
                     <td className="small">{e.source === 'manual' ? <span className="tag amber">✎ {source(e)}</span> : source(e)}</td>
@@ -166,7 +170,7 @@ export default function Today() {
             </table>
           </div>
         )}
-        <p className="muted small" style={{ marginBottom: 0 }}>→ приход · ← уход · ✎ отметка поставлена HR вручную (наведите, чтобы увидеть основание)</p>
+        <p className="muted small" style={{ marginBottom: 0 }}>→ приход · ← уход (после точки — причина выхода) · ✎ отметка поставлена HR вручную (наведите, чтобы увидеть основание)</p>
       </div>
       {edit && <DayEditor emp={edit} day={day} onClose={() => setEdit(null)} onChanged={load} />}
     </>

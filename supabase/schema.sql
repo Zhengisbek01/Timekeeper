@@ -69,6 +69,7 @@ create table if not exists public.attendance_events (
   kiosk_id    uuid references public.kiosks(id) on delete set null,
   source      text not null default 'qr' check (source in ('qr','manual')),
   note        text,
+  reason      text,                 -- причина выхода в рабочее время (указывает работник)
   created_by  uuid default auth.uid(),
   created_at  timestamptz not null default now()
 );
@@ -280,7 +281,8 @@ begin
   has_last := found;
 
   if has_last and last_ev.ts > now() - interval '60 seconds' then
-    return json_build_object('status','duplicate','kind',last_ev.kind,'ts',last_ev.ts,'name',e.full_name);
+    return json_build_object('status','duplicate','id',last_ev.id,'kind',last_ev.kind,'ts',last_ev.ts,'name',e.full_name,
+                             'reason',last_ev.reason,'work_start',e.work_start,'work_end',e.work_end);
   end if;
 
   new_kind := case when has_last and last_ev.kind = 'in' then 'out' else 'in' end;
@@ -289,7 +291,7 @@ begin
   values (e.id, new_kind, k.id, 'qr')
   returning * into rec;
 
-  return json_build_object('status','ok','kind',rec.kind,'ts',rec.ts,'name',e.full_name,
+  return json_build_object('status','ok','id',rec.id,'kind',rec.kind,'ts',rec.ts,'name',e.full_name,
                            'work_start', e.work_start, 'work_end', e.work_end);
 end $$;
 revoke execute on function public.check_in(uuid, text) from public, anon;
@@ -375,6 +377,24 @@ insert into public.holidays (day, name, kind) values
   ('2026-10-26','Перенос (25 октября)','holiday'),
   ('2026-12-16','День Независимости','holiday')
 on conflict (day) do nothing;
+
+-- ---------- Причина выхода ----------
+alter table public.attendance_events add column if not exists reason text;
+
+-- работник указывает причину своего выхода (в течение 3 часов после отметки)
+create or replace function public.set_exit_reason(p_event bigint, p_reason text)
+returns void language plpgsql security definer set search_path = public as $$
+declare eid uuid;
+begin
+  select id into eid from public.employees where user_id = auth.uid();
+  if eid is null then raise exception 'NOT_EMPLOYEE'; end if;
+  if length(trim(coalesce(p_reason, ''))) = 0 then raise exception 'REASON_EMPTY'; end if;
+  update public.attendance_events set reason = left(trim(p_reason), 200)
+   where id = p_event and employee_id = eid and kind = 'out' and ts > now() - interval '3 hours';
+  if not found then raise exception 'REASON_LATE'; end if;
+end $$;
+revoke execute on function public.set_exit_reason(bigint, text) from public, anon;
+grant execute on function public.set_exit_reason(bigint, text) to authenticated;
 
 -- ---------- Сброс пароля через HR ----------
 -- HR задаёт работнику временный пароль (если письмо не дошло или почты нет)
