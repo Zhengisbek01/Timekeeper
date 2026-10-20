@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase, errText } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Brand } from '../components/Logo'
-import { markUnlocked } from '../lib/pin'
 
 // Сюда ведёт ссылка из письма «Восстановление пароля»
 export default function Reset() {
@@ -28,7 +27,6 @@ export default function Reset() {
     const { data, error } = await supabase.auth.updateUser({ password: f.p1 })
     setBusy(false)
     if (error) return setMsg({ err: true, text: errText(error) })
-    markUnlocked(data.user.id)
     setMsg({ text: 'Пароль изменён. Входим…' })
     setTimeout(() => nav('/', { replace: true }), 1200)
   }
