@@ -165,18 +165,19 @@ export function summarySheet(rows, y, m) {
 // ---------- 5. Отметки (детализация) ----------
 export function marksSheet(rows, y, m) {
   const aoa = titleRows('ЖУРНАЛ ОТМЕТОК', y, m, companyLabel(rows))
-  aoa.push(['ФИО', 'Компания', 'Таб. №', 'Дата', 'Приход', 'Уход', 'Отработано, ч', 'Опоздание, мин', 'Ручные отметки', 'Замечания'].map(H))
+  aoa.push(['ФИО', 'Компания', 'Таб. №', 'Дата', 'Приход', 'Уход', 'Факт, ч', 'В табель, ч', 'Опоздание, мин', 'Ручные отметки', 'Замечания'].map(H))
   rows.forEach((r) => r.cells.forEach((c) => {
     if (!c.events.length && !c.absence) return
     const ins = c.events.filter((e) => e.kind === 'in').map((e) => fmtTime(e.ts)).join(', ')
     const outs = c.events.filter((e) => e.kind === 'out').map((e) => fmtTime(e.ts)).join(', ')
     const manual = c.events.filter((e) => e.source === 'manual').map((e) => `${fmtTime(e.ts)}${e.note ? ` (${e.note})` : ''}`).join('; ')
     aoa.push([C(r.emp.full_name, S.bold), C(companyOf(r)), C(r.emp.tab_number, S.center), C(fmtDate(c.key), S.center),
-      C(ins, c.lateMin ? merge(S.center, S.late) : S.center), C(outs, S.center), C(c.worked ? Number((c.worked / 60).toFixed(2)) : '', S.center),
+      C(ins, c.lateMin ? merge(S.center, S.late) : S.center), C(outs, S.center), C(c.actual ? Number((c.actual / 60).toFixed(2)) : '', S.center),
+      C(c.worked ? Number((c.worked / 60).toFixed(2)) : '', S.center),
       C(c.lateMin || '', c.lateMin ? merge(S.center, S.late) : S.center), C(manual),
       C([c.absence ? `${c.absence.code}: ${CODES[c.absence.code]?.label || ''}` : '', ...c.issues, c.early ? 'Ранний уход' : ''].filter(Boolean).join('; '))])
   }))
-  return sheet(aoa, { cols: [32, 18, 8, 11, 14, 14, 12, 13, 26, 40] })
+  return sheet(aoa, { cols: [32, 18, 8, 11, 14, 14, 9, 11, 13, 26, 40] })
 }
 
 // ---------- 6. Список работников ----------
@@ -194,7 +195,7 @@ export function employeesSheet(list, companyName = '') {
 export function daySheets(list, journal, day) {
   const head = [[{ v: ORG_NAME, s: S.sub }], [{ v: `ПРИХОДЫ И УХОДЫ за ${fmtDate(day)}`, s: S.title }], [{ v: `Сформирован ${fmtDate(todayKey())} ${fmtTime(new Date())} в Timekeeper`, s: S.sub }], []]
   const a = [...head]
-  a.push(['ФИО', 'Компания', 'Должность', 'График', 'Статус', 'Приход', 'Опоздание, мин', 'Уход', 'Все отметки', 'Отработано, ч', 'Замечания'].map(H))
+  a.push(['ФИО', 'Компания', 'Должность', 'График', 'Статус', 'Приход', 'Опоздание, мин', 'Уход', 'Все отметки', 'Факт, ч', 'В табель, ч', 'Замечания'].map(H))
   list.forEach(({ emp, c }) => {
     const firstIn = c.events.find((e) => e.kind === 'in')
     const lastOut = [...c.events].reverse().find((e) => e.kind === 'out')
@@ -203,6 +204,7 @@ export function daySheets(list, journal, day) {
       C(firstIn ? fmtTime(firstIn.ts) : '', c.lateMin ? merge(S.center, S.late) : S.center), C(c.lateMin || '', c.lateMin ? merge(S.center, S.late) : S.center),
       C(lastOut && !c.openSince ? fmtTime(lastOut.ts) : '', S.center),
       C(c.events.map((e) => `${e.kind === 'in' ? '→' : '←'}${fmtTime(e.ts)}${e.source === 'manual' ? '✎' : ''}`).join('  ')),
+      C(c.actual ? Number((c.actual / 60).toFixed(2)) : '', S.center),
       C(c.worked ? Number((c.worked / 60).toFixed(2)) : '', S.center), C([...c.issues, c.early ? 'Ранний уход' : ''].filter(Boolean).join('; '))])
   })
   const b = [...head]
@@ -210,7 +212,7 @@ export function daySheets(list, journal, day) {
   ;[...journal].reverse().forEach(({ e, emp, c, late }) => b.push([C(fmtTime(e.ts), late ? merge(S.center, S.late) : S.center), C(emp.full_name, S.bold), C(emp.companies?.name),
     C(e.kind === 'in' ? 'Приход' : 'Уход', S.center), C(late ? c.lateMin : '', late ? merge(S.center, S.late) : S.center),
     C(e.source === 'manual' ? `Вручную${e.note ? ': ' + e.note : ''}` : e.kiosks?.name || 'QR')]))
-  return [['По работникам', sheet(a, { cols: [32, 18, 22, 12, 16, 9, 13, 9, 34, 12, 26] })], ['Журнал отметок', sheet(b, { cols: [9, 32, 18, 10, 13, 30] })]]
+  return [['По работникам', sheet(a, { cols: [32, 18, 22, 12, 16, 9, 13, 9, 34, 9, 11, 26] })], ['Журнал отметок', sheet(b, { cols: [9, 32, 18, 10, 13, 30] })]]
 }
 
 // ---------- выгрузка ----------
