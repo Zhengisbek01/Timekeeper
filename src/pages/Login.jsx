@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, errText, ORG_NAME, normPhone } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Brand } from '../components/Logo'
-import { markUnlocked } from '../lib/pin'
 
 export default function Login() {
   const [params] = useSearchParams()
@@ -53,8 +52,6 @@ export default function Login() {
         })
     setBusy(false)
     if (error) return setMsg({ err: true, text: errText(error) })
-    // только что ввёл пароль — код быстрого входа сразу не спрашиваем
-    if (data?.session) markUnlocked(data.session.user.id)
     if (mode === 'up' && !data.session) setMsg({ text: 'Заявка отправлена. Подтвердите email по ссылке из письма, затем войдите.' })
   }
 
