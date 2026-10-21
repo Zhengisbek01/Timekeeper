@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "kz.mkatk.timekeeper",
+        "sha256_cert_fingerprints": ["93:31:CC:75:B2:FE:06:C8:95:A8:13:08:87:01:73:21:22:95:A5:E8:F9:47:C0:57:C7:78:4C:29:AB:FE:FE:FF"]
+      }
+    }]
