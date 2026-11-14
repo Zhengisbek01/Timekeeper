@@ -10,6 +10,8 @@ import { MarkResult } from '../pages/Scan'
 import { fmtDate, dateKey } from '../lib/time'
 import { geoCheckIn, geoError } from '../lib/geo'
 import GeoConsent from './GeoConsent'
+import { env } from '../lib/config'
+const FACE_ON = env('VITE_FACE_ID') === '1'
 
 const QR_ICON = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" /></svg>
 const FACE_ICON = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" /><path d="M9 9.5v1M15 9.5v1M12 9v4h-1M9.5 15.5a3.5 3.5 0 0 0 5 0" /></svg>
@@ -38,7 +40,8 @@ export default function MarkPanel({ onMarked }) {
     supabase.from('passkeys').select('id,device,created_at,last_used_at').eq('user_id', uid).order('created_at')
       .then(({ data }) => setKeys(data || []))
   }, [uid])
-  useEffect(() => { loadKeys(); faceSupported().then(setSupported) }, [loadKeys])
+  // Face ID включается переменной VITE_FACE_ID=1 (нужен сервис проверки WEBAUTHN_SECRET)
+  useEffect(() => { if (!FACE_ON) return; loadKeys(); faceSupported().then(setSupported) }, [loadKeys])
 
   const faceReady = supported && keys?.length > 0
   const useFace = faceReady && method === 'face'
