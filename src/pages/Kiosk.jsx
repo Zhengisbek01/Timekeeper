@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase, errText, ORG_NAME, kioskEmail } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Logo, PRODUCT } from '../components/Logo'
+import { Logo, PRODUCT, OrgLogo } from '../components/Logo'
 import { fmtTime, fmtDate, todayKey } from '../lib/time'
 import { useKeepAwake, useNightlyReload } from '../lib/keepAwake'
 
@@ -57,6 +57,7 @@ function KioskAuth({ onDone }) {
   return (
     <div className="center">
       <form className="card narrow" onSubmit={submit}>
+        <div className="login-logo"><OrgLogo size={96} /></div>
         <div className="brand" style={{ marginBottom: 8 }}><Logo /> {PRODUCT}</div>
         <h2>Планшет-киоск</h2>
         <p className="muted small">Учётную запись киоска создаёт HR в разделе «Киоски». При первом запуске — «Активация» с кодом от HR.</p>
@@ -121,9 +122,12 @@ function Screen({ onSignOut }) {
         </button>
       )}
       <header>
-        <div>
-          <div className="k-org">{ORG_NAME}</div>
-          <div className="k-name">{tok?.name || 'Киоск'}</div>
+        <div className="k-head">
+          <OrgLogo size={88} className="k-logo" />
+          <div>
+            <div className="k-org">{ORG_NAME}</div>
+            <div className="k-name">{tok?.name || 'Киоск'}</div>
+          </div>
         </div>
         <div className="k-clock">
           <div>{fmtTime(now)}</div>

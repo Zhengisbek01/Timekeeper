@@ -8,6 +8,11 @@ import Kiosk from './pages/Kiosk'
 import Me from './pages/Me'
 import Reset from './pages/Reset'
 import Install from './pages/Install'
+import Legal from './pages/Legal'
+import Mark from './pages/Mark'
+import GeoSetupGuide from './pages/GeoSetupGuide'
+import ConsentGate from './components/ConsentGate'
+import CookieBanner from './components/CookieBanner'
 const Admin = lazy(() => import('./pages/admin/Admin'))
 
 function Guard({ children, admin }) {
@@ -17,14 +22,15 @@ function Guard({ children, admin }) {
   if (!session) return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />
   if (kiosk) return <Navigate to="/kiosk" replace />
   if (admin && !isAdmin) return <Navigate to="/me" replace />
-  return children
+  return <ConsentGate>{children}</ConsentGate>
 }
 
 // Отметка по QR: без входа Scan сам отправит на страницу входа
 function ScanRoute() {
-  const { loading } = useAuth()
+  const { loading, session, kiosk } = useAuth()
   if (loading) return <div className="center muted">Загрузка…</div>
-  return <Scan />
+  if (!session || kiosk) return <Scan />
+  return <ConsentGate><Scan /></ConsentGate>
 }
 
 function Home() {
@@ -59,6 +65,12 @@ export default function App() {
         {['/signin', '/sign-in', '/auth'].map((p) => <Route key={p} path={p} element={<Navigate to="/login" replace />} />)}
         <Route path="/reset" element={<Reset />} />
         <Route path="/install" element={<Install />} />
+        <Route path="/terms" element={<Legal kind="terms" />} />
+        <Route path="/privacy" element={<Legal kind="pd" />} />
+        <Route path="/biometric" element={<Legal kind="biometric" />} />
+        <Route path="/geolocation" element={<Legal kind="geo" />} />
+        <Route path="/mark" element={<Guard><Mark /></Guard>} />
+        <Route path="/geo-setup" element={<Guard><GeoSetupGuide /></Guard>} />
         <Route path="/app" element={<Navigate to="/install" replace />} />
         <Route path="/forgot" element={<Navigate to="/login?mode=forgot" replace />} />
         <Route path="/kiosk" element={<Kiosk />} />
@@ -68,6 +80,7 @@ export default function App() {
         {/* неизвестный адрес — сразу на нужный экран (вход / мои отметки / админка) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <CookieBanner />
     </AuthProvider>
   )
 }

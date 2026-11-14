@@ -262,3 +262,46 @@ input:disabled { background: var(--bg); color: var(--muted); }
 .btn.reason-save:disabled { opacity: .5; }
 .mark .why { font-weight: 400; opacity: .85; }
 .st-away { background: var(--violet-soft); color: var(--violet); }
+
+label.scan-btn { display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.live-cam { display: block; margin: -6px auto 12px; }
+.scan-btn svg { flex: none; width: 22px; height: 22px; }
+
+/* логотип компании */
+.org-logo { display: block; flex: none; object-fit: contain; image-rendering: auto; }
+.brand-sep { width: 1px; height: 26px; background: var(--line); margin: 0 4px; }
+.login-logo { display: flex; justify-content: center; margin: 2px 0 12px; }
+.login-logo .org-logo { filter: drop-shadow(0 2px 6px rgba(0,0,0,.08)); }
+.k-head { display: flex; align-items: center; gap: 16px; }
+.k-logo { border-radius: 50%; background: #fff; padding: 3px; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+@media (max-width: 520px) {
+  .topbar .brand .brand-name, .topbar .brand .muted { display: none; }
+  .topbar .brand .org-logo { width: 46px; height: 46px; }
+  .topbar { flex-wrap: nowrap; }
+  .topbar .btn.sm { padding-left: 10px; padding-right: 10px; }
+}
+.modal-bg > * { min-width: 0; }
+html, body { overflow-x: hidden; }
+
+/* документы и cookie */
+.legal article { max-width: 820px; margin: 0 auto 14px; line-height: 1.6; }
+.legal article h1 { font-size: 24px; line-height: 1.25; }
+.legal article h3 { margin: 18px 0 6px; font-size: 16px; }
+.legal article p { margin: 6px 0; }
+.cookie-banner { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 50; max-width: 720px; margin: 0 auto; background: #16201e; color: #fff; border-radius: 14px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; font-size: 13px; line-height: 1.4; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+.cookie-banner a { color: #7dd3c8; }
+.cookie-banner .btn { flex: none; }
+@media print { .no-print, .cookie-banner { display: none !important; } .legal article { border: 0; box-shadow: none; } body { background: #fff; } }
+
+/* Face ID */
+.scan-btn.face { background: linear-gradient(135deg, #0f766e, #1d4ed8); }
+.card.method { padding: 12px 14px; }
+.mark-overlay { position: fixed; inset: 0; z-index: 60; overflow: auto; }
+.face-points { padding-left: 0; list-style: none; margin: 8px 0 12px; display: grid; gap: 8px; font-size: 14px; line-height: 1.45; }
+.st-off { background: var(--off); color: var(--muted); }
+
+/* геолокация: инструкция */
+.copy-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 2px; }
+.copy-link code { flex: 1 1 220px; word-break: break-all; background: rgba(0,0,0,.05); padding: 6px 8px; border-radius: 8px; font-size: 13px; }
+.geo-guide .sites { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.geo-guide .steps li { margin-bottom: 8px; }

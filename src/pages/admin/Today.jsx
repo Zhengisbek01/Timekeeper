@@ -15,7 +15,7 @@ const status = (c) => {
   if (c.scheduled) return 'none'
   return 'off'
 }
-const source = (e) => (e.source === 'manual' ? `вручную${e.note ? ': ' + e.note : ''}` : e.kiosks?.name || 'QR')
+const source = (e) => (e.source === 'manual' ? `вручную${e.note ? ': ' + e.note : ''}` : (e.source === 'face' || e.source === 'geo') ? (e.note || (e.source === 'geo' ? 'Геолокация' : 'Face ID')) : `QR · ${e.kiosks?.name || 'вход'}`)
 
 export default function Today() {
   const [day, setDay] = useState(todayKey())
@@ -129,7 +129,7 @@ export default function Today() {
                         <div className="marks">
                           {c.events.map((e) => (
                             <span key={e.id} className={`mark ${e.kind} ${e.source === 'manual' ? 'manual' : ''}`} title={`${e.kind === 'in' ? 'Приход' : 'Уход'} · ${source(e)}${e.reason ? ' · ' + e.reason : ''}`}>
-                              {e.kind === 'in' ? '→' : '←'} {fmtTime(e.ts)}{e.source === 'manual' ? ' ✎' : ''}{e.reason ? <span className="why"> · {e.reason}</span> : null}
+                              {e.kind === 'in' ? '→' : '←'} {fmtTime(e.ts)}{e.source === 'manual' ? ' ✎' : e.source === 'face' ? ' ☺' : e.source === 'geo' ? ' 📍' : ''}{e.reason ? <span className="why"> · {e.reason}</span> : null}
                             </span>
                           ))}
                           {c.issues.map((s) => <span key={s} className="tag amber">{s}</span>)}
@@ -170,7 +170,7 @@ export default function Today() {
             </table>
           </div>
         )}
-        <p className="muted small" style={{ marginBottom: 0 }}>→ приход · ← уход (после точки — причина выхода) · ✎ отметка поставлена HR вручную (наведите, чтобы увидеть основание)</p>
+        <p className="muted small" style={{ marginBottom: 0 }}>→ приход · ← уход (после точки — причина выхода) · ☺ по Face ID · 📍 по геолокации · ✎ отметка поставлена HR вручную (наведите, чтобы увидеть основание)</p>
       </div>
       {edit && <DayEditor emp={edit} day={day} onClose={() => setEdit(null)} onChanged={load} />}
     </>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { acceptConsent } from '../lib/consents'
 import { supabase, errText, ORG_NAME, normPhone } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { Brand } from '../components/Logo'
+import { Brand, OrgLogo } from '../components/Logo'
 import InstallBanner from '../components/InstallBanner'
 
 export default function Login() {
@@ -14,7 +15,7 @@ export default function Login() {
   const [mode, setMode] = useState(initMode)
   const go = (m) => { setMode(m); setMsg(null) }
   const [companies, setCompanies] = useState([])
-  const [f, setF] = useState({ email: '', phone: '', password: '', password2: '', full_name: '', position: '', company_id: '', consent: false })
+  const [f, setF] = useState({ email: '', phone: '', password: '', password2: '', full_name: '', position: '', company_id: '', consent: false, terms: false })
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
 
@@ -53,6 +54,8 @@ export default function Login() {
         })
     setBusy(false)
     if (error) return setMsg({ err: true, text: errText(error) })
+    // согласия при регистрации записываются в журнал (дата, время, IP, версия документа)
+    if (mode === 'up' && data.session) { try { await acceptConsent('terms'); await acceptConsent('pd') } catch {} }
     if (mode === 'up' && !data.session) setMsg({ text: 'Заявка отправлена. Подтвердите email по ссылке из письма, затем войдите.' })
   }
 
@@ -61,7 +64,8 @@ export default function Login() {
       <div className="login-wrap">
       <InstallBanner />
       <form className="card narrow" onSubmit={submit}>
-        <Brand />
+        <div className="login-logo"><OrgLogo size={112} /></div>
+        <Brand org={false} />
         <p className="muted small">{ORG_NAME}</p>
         <div className="seg">
           <button type="button" className={mode !== 'up' ? 'on' : ''} onClick={() => go('in')}>Вход</button>
@@ -104,8 +108,12 @@ export default function Login() {
               <input type="password" required minLength={6} autoComplete="new-password" value={f.password2} onChange={set('password2')} />
             </label>
             <label className="inline consent">
+              <input type="checkbox" required checked={f.terms} onChange={set('terms')} />
+              <span>Принимаю <Link to="/terms" target="_blank">Пользовательское соглашение</Link></span>
+            </label>
+            <label className="inline consent">
               <input type="checkbox" required checked={f.consent} onChange={set('consent')} />
-              <span>Даю согласие на сбор и обработку моих персональных данных (ФИО, email, телефон, должность, время прихода и ухода) для учёта рабочего времени</span>
+              <span>Даю согласие на сбор и обработку моих персональных данных (ФИО, email, телефон, должность, время прихода и ухода) для учёта рабочего времени согласно <Link to="/privacy" target="_blank">Политике конфиденциальности</Link></span>
             </label>
             <p className="muted small">После регистрации заявку проверит отдел кадров. Отмечаться можно будет после подтверждения.</p>
           </>

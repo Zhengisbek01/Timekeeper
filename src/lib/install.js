@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
+import { env } from './config'
 
 // Ссылка на APK для Android (файл кладётся в public/, см. README)
-export const APK_URL = import.meta.env.VITE_APK_URL || '/timekeeper.apk'
+export const APK_URL = env('VITE_APK_URL') || '/timekeeper.apk'
 
 const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
 export const isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document)

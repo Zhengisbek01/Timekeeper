@@ -1,3 +1,4 @@
+import { env } from '../lib/config'
 export const PRODUCT = 'Timekeeper'
 
 // Циферблат со стрелками 9:00 — фирменный знак
@@ -11,6 +12,17 @@ export function Logo({ size = 28 }) {
   )
 }
 
-export function Brand({ children }) {
-  return <div className="brand"><Logo /> {PRODUCT}{children}</div>
+// Логотип компании (файл public/org-logo.svg — вектор, чёткий на любом экране)
+export const ORG_LOGO = env('VITE_ORG_LOGO') || '/org-logo.svg'
+export function OrgLogo({ size = 40, className = '' }) {
+  return <img className={`org-logo ${className}`} src={ORG_LOGO} width={size} height={size} alt="Логотип компании" decoding="async" />
+}
+
+export function Brand({ children, org = true }) {
+  return (
+    <div className="brand">
+      {org && <><OrgLogo size={40} /><span className="brand-sep" aria-hidden="true" /></>}
+      <Logo /> <span className="brand-name">{PRODUCT}</span>{children}
+    </div>
+  )
 }

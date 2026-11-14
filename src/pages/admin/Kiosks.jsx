@@ -7,8 +7,9 @@ export default function Kiosks() {
   const [f, setF] = useState({ name: '', login: '' })
   const [shown, setShown] = useState(null)   // {name, login, code} — показать HR один раз
   const [err, setErr] = useState(null)
+  const [geo, setGeo] = useState(null)   // редактирование координат входа для Face ID
 
-  const load = () => supabase.from('kiosks').select('id,name,login,user_id,active,activation_code,created_at').order('created_at').then(({ data }) => setList(data || []))
+  const load = () => supabase.from('kiosks').select('id,name,login,user_id,active,activation_code,created_at,lat,lng,radius_m,address').order('created_at').then(({ data }) => setList(data || []))
   useEffect(() => { load() }, [])
 
   const create = async (e) => {
@@ -47,7 +48,7 @@ export default function Kiosks() {
       <p className="muted small">На планшете откройте <code>{window.location.origin}/kiosk</code> → «Активация» → логин, код и новый пароль. Дальше планшет остаётся в системе; при выходе — «Вход» с логином и паролем.</p>
       {err && <div className="alert err">{err}</div>}
       <table className="tbl">
-        <thead><tr><th>Киоск</th><th>Логин</th><th>Учётная запись</th><th></th></tr></thead>
+        <thead><tr><th>Киоск</th><th>Логин</th><th>Учётная запись</th><th>Геозона (Face ID, геолокация)</th><th></th></tr></thead>
         <tbody>
           {list.map((k) => (
             <tr key={k.id} className={k.active ? '' : 'dim'}>
@@ -58,6 +59,10 @@ export default function Kiosks() {
                   : k.user_id ? <span className="pill st-here">активирован</span>
                   : <span className="pill st-abs">ждёт активации · код {k.activation_code}</span>}
               </td>
+              <td className="small">
+                {k.address && <div>{k.address}</div>}{k.lat != null ? <>📍 радиус {k.radius_m} м <a href={`https://www.google.com/maps?q=${k.lat},${k.lng}`} target="_blank" rel="noreferrer">на карте</a></> : <span className="muted">не задан</span>}{' '}
+                <button className="linkbtn" onClick={() => setGeo({ id: k.id, name: k.name, address: k.address || '', lat: k.lat ?? '', lng: k.lng ?? '', radius_m: k.radius_m || 150 })}>{k.lat != null ? 'изменить' : 'задать'}</button>
+              </td>
               <td className="r nowrap">
                 <button className="btn sm ghost" onClick={() => setPassword(k)}>Пароль</button>{' '}
                 <button className="btn sm ghost" onClick={() => reset(k)}>Сбросить</button>{' '}
@@ -65,9 +70,11 @@ export default function Kiosks() {
               </td>
             </tr>
           ))}
-          {!list.length && <tr><td className="muted" colSpan={4}>Добавьте первый киоск</td></tr>}
+          {!list.length && <tr><td className="muted" colSpan={5}>Добавьте первый киоск</td></tr>}
         </tbody>
       </table>
+
+      {geo && <GeoEditor geo={geo} onClose={() => setGeo(null)} onSaved={() => { setGeo(null); load() }} />}
 
       {shown && (
         <div className="modal-bg" onClick={() => setShown(null)}>
@@ -86,6 +93,58 @@ export default function Kiosks() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Координаты входа/объекта: отметки по Face ID и геолокации принимаются только в этом радиусе
+function GeoEditor({ geo, onClose, onSaved }) {
+  const [f, setF] = useState(geo)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+  // можно вставить «51.128207, 71.430411» целиком (из 2ГИС / Google Карт) в поле широты
+  const set = (k) => (e) => {
+    const v = e.target.value
+    const m = k === 'lat' && v.match(/^\s*(-?\d+[.,]\d+)\s*[,; ]\s*(-?\d+[.,]\d+)\s*$/)
+    if (m) return setF({ ...f, lat: m[1].replace(',', '.'), lng: m[2].replace(',', '.') })
+    setF({ ...f, [k]: v })
+  }
+
+  function here() {
+    setErr(null); setBusy(true)
+    navigator.geolocation?.getCurrentPosition(
+      (p) => { setF({ ...f, lat: p.coords.latitude.toFixed(6), lng: p.coords.longitude.toFixed(6) }); setBusy(false) },
+      () => { setErr('Не удалось определить координаты. Разрешите геолокацию или введите вручную.'); setBusy(false) },
+      { enableHighAccuracy: true, timeout: 15000 })
+  }
+  async function save(e) {
+    e.preventDefault(); setErr(null)
+    const lat = f.lat === '' ? null : Number(String(f.lat).replace(',', '.'))
+    const lng = f.lng === '' ? null : Number(String(f.lng).replace(',', '.'))
+    if ((lat == null) !== (lng == null) || (lat != null && (!Number.isFinite(lat) || !Number.isFinite(lng)))) return setErr('Укажите обе координаты числами, например 51.128207 и 71.430411')
+    const { error } = await supabase.from('kiosks').update({ lat, lng, address: (f.address || '').trim() || null, radius_m: Math.max(30, Math.min(2000, +f.radius_m || 150)) }).eq('id', geo.id)
+    if (error) return setErr(errText(error))
+    onSaved()
+  }
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}>
+        <h3>«{geo.name}» — геозона</h3>
+        <p className="muted small">Отметки по Face ID и геолокации принимаются только в этом радиусе. Для объекта без планшета тоже создайте здесь запись (активировать её не нужно). Проще всего: встаньте у входа с телефоном и нажмите «Мои координаты сейчас».</p>
+        <button type="button" className="btn block" onClick={here} disabled={busy}>{busy ? 'Определяем…' : '📍 Мои координаты сейчас'}</button>
+        <div className="grid2" style={{ marginTop: 10 }}>
+          <label className="span2">Адрес (работники увидят его в инструкции)<input placeholder="г. Астана, ул. …" value={f.address} onChange={set('address')} /></label>
+          <label>Широта<input inputMode="decimal" placeholder="51.128207" value={f.lat} onChange={set('lat')} /></label>
+          <label>Долгота<input inputMode="decimal" placeholder="71.430411" value={f.lng} onChange={set('lng')} /></label>
+          <label className="span2">Радиус, м (рекомендуем 100–200: GPS в здании неточен)<input type="number" min="30" max="2000" value={f.radius_m} onChange={set('radius_m')} /></label>
+        </div>
+        {f.lat !== '' && f.lng !== '' && <p className="small"><a href={`https://www.google.com/maps?q=${f.lat},${f.lng}`} target="_blank" rel="noreferrer">Проверить точку на карте</a></p>}
+        {err && <div className="alert err">{err}</div>}
+        <div className="row gap end">
+          <button type="button" className="btn ghost" onClick={onClose}>Отмена</button>
+          <button className="btn primary">Сохранить</button>
+        </div>
+      </form>
     </div>
   )
 }

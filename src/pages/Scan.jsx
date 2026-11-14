@@ -34,14 +34,37 @@ export default function Scan() {
 
   if (state.status === 'loading') return <div className="center muted">Отмечаем…</div>
 
+  return <MarkResult state={state} setState={setState} />
+}
+
+// Экран результата отметки (QR, Face ID, геолокация): приход/уход, повтор, ошибка, выбор причины выхода
+export function MarkResult({ state, setState, onClose }) {
+  const back = onClose
+    ? (cls) => <button className={`btn ${cls}`} onClick={onClose}>Мои отметки</button>
+    : (cls) => <Link className={`btn ${cls}`} to="/me">Мои отметки</Link>
+
   if (state.status === 'error') return (
     <div className="scan-result bad">
       <div className="big-icon">!</div>
       <h1>Не удалось отметиться</h1>
       <p>{state.text}</p>
-      <Link className="btn" to="/me">Мои отметки</Link>
+      {back('')}
     </div>
   )
+
+  if (state.status === 'already') {
+    const noIn = state.kind === 'out' && !state.ts
+    return (
+      <div className="scan-result warn">
+        <div className="big-icon">✓</div>
+        <p className="name">{state.name}</p>
+        <h1>{state.kind === 'in' ? 'Приход уже отмечен' : noIn ? 'Сегодня прихода не было' : 'Уход уже отмечен'}</h1>
+        {state.ts && <div className="time">{fmtTime(state.ts)}</div>}
+        <p>{noIn ? 'Отмечать уход не нужно.' : 'Ничего делать не нужно.'}</p>
+        {back('ghost-light')}
+      </div>
+    )
+  }
 
   const isIn = state.kind === 'in'
   const late = isIn && state.work_start && minutesOfDay(state.ts) - timeToMin(state.work_start)
@@ -53,13 +76,15 @@ export default function Scan() {
       <p className="name">{state.name}</p>
       <h1>{state.status === 'duplicate' ? 'Уже отмечено' : isIn ? 'Приход' : 'Уход'}</h1>
       <div className="time">{fmtTime(state.ts)}</div>
-      {state.status === 'duplicate' && <p>Повторное сканирование в течение минуты не учитывается.</p>}
+      {state.via === 'face' && <p>Face ID · у входа</p>}
+      {state.via === 'geo' && state.status === 'ok' && <p>📍 {state.site || 'на объекте'}</p>}
+      {state.status === 'duplicate' && <p>Повторная отметка в течение минуты не учитывается.</p>}
       {state.status === 'ok' && isIn && late > 5 && <p>Опоздание: {late} мин</p>}
       {state.reason && <p>Причина: <b>{state.reason}</b></p>}
       {state.reason && !/^Ухожу домой/.test(state.reason)
-        ? <p>При возвращении снова отсканируйте QR-код на входе.</p>
+        ? <p>При возвращении снова отметьтесь на входе.</p>
         : state.status === 'ok' && <p>{isIn ? 'Хорошего рабочего дня!' : 'До свидания!'}</p>}
-      <Link className="btn ghost-light" to="/me">Мои отметки</Link>
+      {back('ghost-light')}
     </div>
   )
 }
