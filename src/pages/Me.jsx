@@ -5,7 +5,7 @@ import { Brand } from '../components/Logo'
 import { buildRow, hoursStr, CODES } from '../lib/timesheet'
 import { monthRangeUtc, fmtDate, todayKey, DOW_SHORT, isoDow, minToHM } from '../lib/time'
 import MonthPicker from '../components/MonthPicker'
-import QrScan from '../components/QrScan'
+import MarkPanel from '../components/MarkPanel'
 import InstallBanner from '../components/InstallBanner'
 
 export default function Me() {
@@ -13,7 +13,6 @@ export default function Me() {
   const t = todayKey()
   const [ym, setYm] = useState({ y: +t.slice(0, 4), m: +t.slice(5, 7) })
   const [row, setRow] = useState(null)
-  const [scan, setScan] = useState(false)
 
   useEffect(() => {
     if (!employee || employee.status !== 'approved') return
@@ -72,11 +71,7 @@ export default function Me() {
       </div>
 
       <InstallBanner />
-      <button className="btn primary block scan-btn" onClick={() => setScan(true)}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10" /></svg>
-        Отметиться — сканировать QR
-      </button>
-      {scan && <QrScan onClose={() => setScan(false)} />}
+      <MarkPanel onMarked={() => setYm({ ...ym })} />
 
       <div className="card">
         <div className="muted small">{[employee.companies?.name, employee.position, employee.department].filter(Boolean).join(' · ')}</div>

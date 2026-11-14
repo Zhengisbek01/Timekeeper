@@ -59,7 +59,7 @@ export default function DayEditor({ emp, day, onClose, onChanged }) {
               <tr key={e.id}>
                 <td><span className={`pill ${e.kind}`}>{e.kind === 'in' ? 'Приход' : 'Уход'}</span></td>
                 <td><b>{fmtTime(e.ts)}</b></td>
-                <td className="muted small">{e.source === 'manual' ? `вручную${e.note ? ': ' + e.note : ''}` : e.kiosks?.name || 'QR'}</td>
+                <td className="muted small">{e.source === 'manual' ? `вручную${e.note ? ': ' + e.note : ''}` : (e.source === 'face' || e.source === 'geo') ? (e.note || (e.source === 'geo' ? 'Геолокация' : 'Face ID')) : `QR · ${e.kiosks?.name || ''}`}</td>
                 <td className="r"><button className="linkbtn red" onClick={() => delEvent(e.id)}>удалить</button></td>
               </tr>
             ))}

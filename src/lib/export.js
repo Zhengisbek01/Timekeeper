@@ -215,7 +215,7 @@ export function daySheets(list, journal, day) {
     a.push([C(emp.full_name, S.bold), C(emp.companies?.name), C(emp.position), C(`${emp.work_start.slice(0, 5)}–${emp.work_end.slice(0, 5)}`, S.center), C(st),
       C(firstIn ? fmtTime(firstIn.ts) : '', c.lateMin ? merge(S.center, S.late) : S.center), C(c.lateMin || '', c.lateMin ? merge(S.center, S.late) : S.center),
       C(lastOut && !c.openSince ? fmtTime(lastOut.ts) : '', S.center),
-      C(c.events.map((e) => `${e.kind === 'in' ? '→' : '←'}${fmtTime(e.ts)}${e.source === 'manual' ? '✎' : ''}${e.reason ? ` (${e.reason})` : ''}`).join('  ')),
+      C(c.events.map((e) => `${e.kind === 'in' ? '→' : '←'}${fmtTime(e.ts)}${e.source === 'manual' ? '✎' : e.source === 'face' ? '☺' : e.source === 'geo' ? '📍' : ''}${e.reason ? ` (${e.reason})` : ''}`).join('  ')),
       C(c.actual ? Number((c.actual / 60).toFixed(2)) : '', S.center),
       C(c.worked ? Number((c.worked / 60).toFixed(2)) : '', S.center), C([...c.issues, c.early ? 'Ранний уход' : ''].filter(Boolean).join('; '))])
   })
@@ -223,7 +223,7 @@ export function daySheets(list, journal, day) {
   b.push(['Время', 'ФИО', 'Компания', 'Отметка', 'Опоздание, мин', 'Источник'].map(H))
   ;[...journal].reverse().forEach(({ e, emp, c, late }) => b.push([C(fmtTime(e.ts), late ? merge(S.center, S.late) : S.center), C(emp.full_name, S.bold), C(emp.companies?.name),
     C(e.kind === 'in' ? 'Приход' : 'Уход', S.center), C(late ? c.lateMin : '', late ? merge(S.center, S.late) : S.center),
-    C(e.source === 'manual' ? `Вручную${e.note ? ': ' + e.note : ''}` : e.kiosks?.name || 'QR')]))
+    C(e.source === 'manual' ? `Вручную${e.note ? ': ' + e.note : ''}` : (e.source === 'face' || e.source === 'geo') ? (e.note || (e.source === 'geo' ? 'Геолокация' : 'Face ID')) : `QR · ${e.kiosks?.name || ''}`)]))
   return [['По работникам', sheet(a, { cols: [32, 18, 22, 12, 16, 9, 13, 9, 34, 9, 11, 26] })], ['Журнал отметок', sheet(b, { cols: [9, 32, 18, 10, 13, 30] })]]
 }
 
@@ -255,3 +255,19 @@ export const exportDay = (list, journal, day) => save(daySheets(list, journal, d
 export const exportTimesheet = (rows, y, m) => REPORTS.timesheet.run(rows, y, m)
 export const exportEmployees = (list, companyName) =>
   save([['Работники', employeesSheet(list, companyName)]], `Работники_${todayKey()}.xlsx`)
+
+// ---------- Журнал согласий ----------
+const KIND_LABEL = { terms: 'Пользовательское соглашение', pd: 'Согласие на обработку ПД', biometric: 'Биометрическая аутентификация (Face ID)', geo: 'Согласие на геолокацию' }
+const dt = (ts) => (ts ? `${fmtDate(new Date(new Date(ts).getTime() + 5 * 3600e3).toISOString().slice(0, 10))} ${fmtTime(ts)}` : '')
+export function exportConsents(consents, empByUser) {
+  const aoa = [[{ v: ORG_NAME, s: S.sub }], [{ v: 'ЖУРНАЛ СОГЛАСИЙ', s: S.title }],
+    [{ v: `Сформирован ${fmtDate(todayKey())} ${fmtTime(new Date())} в Timekeeper · время по Астане (UTC+5)`, s: S.sub }], []]
+  aoa.push(['ФИО', 'Компания', 'Должность', 'Документ', 'Редакция', 'Дата и время согласия', 'Статус', 'Дата отзыва', 'IP-адрес', 'Устройство / браузер', 'Хеш документа (SHA-256)'].map(H))
+  ;[...consents].sort((a, b) => new Date(a.accepted_at) - new Date(b.accepted_at)).forEach((c) => {
+    const e = empByUser[c.user_id] || {}
+    aoa.push([C(e.full_name || c.user_id, S.bold), C(e.companies?.name), C(e.position), C(KIND_LABEL[c.kind] || c.kind), C(c.version, S.center),
+      C(dt(c.accepted_at), S.center), C(c.revoked_at ? 'Отозвано' : 'Действует', c.revoked_at ? merge(S.center, S.bad) : S.center),
+      C(dt(c.revoked_at), S.center), C(c.ip), C(c.user_agent), C(c.doc_hash)])
+  })
+  save([['Согласия', sheet(aoa, { cols: [32, 18, 22, 34, 9, 18, 11, 18, 15, 50, 30] })]], `Согласия_${todayKey()}.xlsx`)
+}

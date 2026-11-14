@@ -10,6 +10,7 @@ import Employees from './Employees'
 import Reports from './Reports'
 import Kiosks from './Kiosks'
 import Calendar from './Calendar'
+import Consents from './Consents'
 
 export default function Admin() {
   const { employee, signOut } = useAuth()
@@ -40,8 +41,9 @@ export default function Admin() {
         <NavLink to="/admin/requests">Заявки{pending > 0 && <span className="badge">{pending}</span>}</NavLink>
         <NavLink to="/admin/employees">Работники</NavLink>
         <NavLink to="/admin/reports">Отчёты</NavLink>
-        <NavLink to="/admin/kiosks">Киоски</NavLink>
+        <NavLink to="/admin/kiosks">Входы и объекты</NavLink>
         <NavLink to="/admin/calendar">Календарь</NavLink>
+        <NavLink to="/admin/consents">Согласия</NavLink>
       </nav>
       <Routes>
         <Route index element={<Navigate to={pending ? 'requests' : 'today'} replace />} />
@@ -52,6 +54,7 @@ export default function Admin() {
         <Route path="reports" element={<Reports />} />
         <Route path="kiosks" element={<Kiosks />} />
         <Route path="calendar" element={<Calendar />} />
+        <Route path="consents" element={<Consents />} />
       </Routes>
     </div>
   )

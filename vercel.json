@@ -1,6 +1,15 @@
 {
   "headers": [
     {
+      "source": "/config.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
       "source": "/sw.js",
       "headers": [
         {
@@ -43,8 +52,13 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!\\.well-known/)(?!timekeeper\\.apk).*)",
+      "source": "/((?!api/)(?!\\.well-known/)(?!timekeeper\\.apk).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/webauthn.js": {
+      "maxDuration": 10
+    }
+  }
 }

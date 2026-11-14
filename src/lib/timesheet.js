@@ -142,7 +142,7 @@ export function buildRow(emp, events, absences, holidaysMap, y, m) {
       // вышел в рабочее время и ещё не вернулся
       away: (() => { const l = info.events[info.events.length - 1]; return l?.kind === 'out' && l.reason && !isHomeExit(l) ? l : null })(),
       // уходы в рабочее время без указанной причины
-      noReason: scheduled ? info.events.filter((e) => e.kind === 'out' && !e.reason && e.source === 'qr' &&
+      noReason: scheduled ? info.events.filter((e) => e.kind === 'out' && !e.reason && e.source !== 'manual' &&
         minutesOfDay(e.ts) + (dateKey(e.ts) > key ? 1440 : 0) < schedEnd - GRACE_MIN).length : 0,
     })
   }

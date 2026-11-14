@@ -91,3 +91,15 @@ HR: «Киоски» → название + логин (например `kiosk-
 - Android APK: pwabuilder.com → адрес сайта → Package For Stores → Android → **Other Android** → Package ID `kz.mkatk.timekeeper` → Download.
   Из архива: `*.apk` → `public/timekeeper.apk`, `assetlinks.json` → `public/.well-known/assetlinks.json`.
   **signing.keystore и signing-key-info.txt сохраните** — без них не выпустить обновление APK.
+
+## Face ID, согласия, cookie (обновление 28.10.2026)
+1. Supabase → SQL Editor: выполнить `supabase/update-faceid.sql`, затем
+   `select value from public.app_secrets where name = 'webauthn';` → скопировать значение.
+2. Vercel → Settings → Environment Variables (Production):
+   - `WEBAUTHN_SECRET` = значение из п.1 (без префикса VITE_, в браузер не попадает);
+   - реквизиты для документов: `VITE_OPERATOR_NAME`, `VITE_OPERATOR_BIN`, `VITE_OPERATOR_ADDRESS`, `VITE_OPERATOR_EMAIL`, `VITE_OPERATOR_PHONE`;
+   - необязательно: `VITE_DATA_LOCATION` (где хранятся данные — для Политики), `VITE_ORG_LOGO` (свой логотип вместо `public/org-logo.svg`).
+   После добавления — Redeploy.
+3. HR → «Киоски» → у входа нажать «задать» → «Мои координаты сейчас» → Сохранить (без этого Face ID-отметка не работает).
+4. Документы: `/terms`, `/privacy`, `/biometric` (текст — `src/legal/docs.js`; при правке поднимите `version`).
+5. Журнал согласий: HR → «Согласия» → Excel.

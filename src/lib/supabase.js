@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { env } from './config'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY
+const url = env('VITE_SUPABASE_URL')
+const key = env('VITE_SUPABASE_ANON_KEY')
 
 // Пришли по ссылке «восстановить пароль» из письма (запоминаем до того, как клиент очистит адрес)
 export const recoveryLink = typeof window !== 'undefined' &&
@@ -9,11 +10,11 @@ export const recoveryLink = typeof window !== 'undefined' &&
 
 export const configured = Boolean(url && key)
 export const supabase = configured ? createClient(url, key) : null
-export const ORG_NAME = import.meta.env.VITE_ORG_NAME || 'Учёт рабочего времени'
+export const ORG_NAME = env('VITE_ORG_NAME') || 'Учёт рабочего времени'
 
 // Киоск входит по логину: логин → служебный email (письма не отправляются,
 // в Supabase должно быть отключено «Confirm email»)
-const LOGIN_DOMAIN = import.meta.env.VITE_LOGIN_DOMAIN || 'timekeeper-staff.kz'
+const LOGIN_DOMAIN = env('VITE_LOGIN_DOMAIN') || 'timekeeper-staff.kz'
 
 // '+7 (701) 123-45-67' / '87011234567' → '77011234567' (или null)
 export function normPhone(v) {
