@@ -39,7 +39,7 @@ export default function Mark() {
       <div className="card narrow">
         <h2>Отметка по геолокации</h2>
         <GeoConsent onDone={() => c.reload()} />
-        <p className="muted small"><Link to="/me">Отметиться по QR</Link></p>
+        <p className="muted small"><Link to="/me">Мои отметки</Link></p>
       </div>
     </div>
   )
@@ -55,7 +55,7 @@ export default function Mark() {
       <h1>Не удалось отметиться</h1>
       <p>{state.text}</p>
       <button className="btn" onClick={run}>Попробовать снова</button>
-      <Link className="btn ghost-light" to="/me">Отметиться по QR</Link>
+      <Link className="btn ghost-light" to="/me">Мои отметки</Link>
     </div>
   )
   return <MarkResult state={state} setState={setState} />

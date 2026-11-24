@@ -1,33 +1,54 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, errText } from '../lib/supabase'
 import { Brand } from '../components/Logo'
 import { isIOS, isAndroid } from '../lib/install'
+import { env } from '../lib/config'
 
-// Инструкция: телефон сам напоминает отметиться при прибытии на объект и уходе
+// Автоотметка без открытия приложения: iPhone «Команды» → «Прибытие» / «Уход» → запрос с личным ключом
 export default function GeoSetupGuide() {
   const [sites, setSites] = useState(null)
+  const [hasKey, setHasKey] = useState(null)
+  const [key, setKey] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
   const [copied, setCopied] = useState(null)
-  useEffect(() => { supabase.rpc('geo_sites').then(({ data }) => setSites(data || [])) }, [])
 
-  const base = window.location.origin
-  const links = { in: `${base}/mark?e=in`, out: `${base}/mark?e=out` }
-  const copy = async (k) => {
-    try { await navigator.clipboard.writeText(links[k]); setCopied(k); setTimeout(() => setCopied(null), 2000) }
-    catch { prompt('Скопируйте ссылку', links[k]) }
+  useEffect(() => {
+    supabase.rpc('geo_sites').then(({ data }) => setSites(data || []))
+    supabase.from('geo_tokens').select('created_at,last_used_at').maybeSingle().then(({ data }) => setHasKey(data || false))
+  }, [])
+
+  const api = env('VITE_GEO_API') || `${window.location.origin}/api/geo`
+  const shortcutIn = env('VITE_SHORTCUT_IN')
+  const shortcutOut = env('VITE_SHORTCUT_OUT')
+  const urlFor = (e) => `${api}?t=${key || 'ВАШ_КЛЮЧ'}&e=${e}&lat=`
+
+  async function newKey() {
+    if (hasKey && !confirm('Старый ключ перестанет работать. В командах «Приход» и «Уход» нужно будет вставить новый. Продолжить?')) return
+    setBusy(true); setErr(null)
+    try {
+      const { data, error } = await supabase.rpc('geo_token_create')
+      if (error) throw error
+      setKey(data); setHasKey({ created_at: new Date().toISOString() })
+    } catch (e) { setErr(errText(e)) } finally { setBusy(false) }
   }
-  const LinkBox = ({ k, label }) => (
+  const copy = async (id, text) => {
+    try { await navigator.clipboard.writeText(text); setCopied(id); setTimeout(() => setCopied(null), 2000) }
+    catch { prompt('Скопируйте', text) }
+  }
+  const Copy = ({ id, text, label }) => (
     <div className="copy-link">
-      <code>{links[k]}</code>
-      <button type="button" className="btn sm" onClick={() => copy(k)}>{copied === k ? '✓ Скопировано' : `Копировать (${label})`}</button>
+      <code>{text}</code>
+      <button type="button" className="btn sm" onClick={() => copy(id, text)}>{copied === id ? '✓ Скопировано' : label}</button>
     </div>
   )
 
   return (
     <div className="page install geo-guide">
       <div className="topbar"><Brand /><Link className="btn sm ghost" to="/me">Мои отметки</Link></div>
-      <h2>Уведомления «Вы на объекте»</h2>
-      <p className="muted">Телефон сам заметит, что вы пришли на объект или ушли с него, и предложит отметиться. Вы нажимаете уведомление — отметка готова. Мы не отслеживаем перемещения: место проверяется только в момент отметки.</p>
+      <h2>Автоотметка без открытия приложения</h2>
+      <p className="muted">Пришли на объект — iPhone сам отправит приход, ушли — уход. Ничего нажимать не нужно. Место проверяется только в момент отметки, перемещения не отслеживаются.</p>
 
       <div className="card">
         <h3>📍 Объекты</h3>
@@ -49,39 +70,61 @@ export default function GeoSetupGuide() {
         )}
       </div>
 
+      <div className="card">
+        <h3>🔑 Ваш личный ключ</h3>
+        <p className="muted small">Ключ отмечает приход и уход только за вас. Никому его не передавайте. Новый ключ отменяет старый.</p>
+        {key ? (
+          <Copy id="key" text={key} label="Копировать ключ" />
+        ) : hasKey ? (
+          <p className="small">Ключ уже создан{hasKey.last_used_at ? ', последняя автоотметка ' + new Date(hasKey.last_used_at).toLocaleString('ru-RU') : ''}. Если команды уже настроены — ничего делать не нужно.</p>
+        ) : null}
+        {err && <div className="alert err">{err}</div>}
+        {!key && <button className="btn primary" onClick={newKey} disabled={busy}>{busy ? '…' : hasKey ? 'Создать новый ключ' : 'Получить ключ'}</button>}
+      </div>
+
       {(isIOS || !isAndroid) && (
         <div className="card">
-          <h3>📱 iPhone — приложение «Команды» (один раз, 3 минуты)</h3>
+          <h3>📱 iPhone — один раз, 5 минут</h3>
+          <p className="small"><b>Шаг 1. Команды «Приход» и «Уход»</b></p>
+          {shortcutIn && shortcutOut ? (
+            <ol className="steps">
+              <li>Нажмите <a href={shortcutIn} target="_blank" rel="noreferrer"><b>Добавить команду «TK Приход»</b></a> → «Добавить команду» → вставьте ваш ключ.</li>
+              <li>Нажмите <a href={shortcutOut} target="_blank" rel="noreferrer"><b>Добавить команду «TK Уход»</b></a> → вставьте тот же ключ.</li>
+            </ol>
+          ) : (
+            <ol className="steps">
+              <li>Приложение <b>«Команды»</b> → вкладка «Команды» → <b>«+»</b>. Назовите команду <b>TK Приход</b>.</li>
+              <li>Добавьте действие <b>«Получить текущую геопозицию»</b>.</li>
+              <li>Добавьте действие <b>«Получить содержимое URL»</b>. В поле URL вставьте:
+                <Copy id="in" text={urlFor('in')} label="Копировать" />
+                затем нажмите на конец строки → «Выбрать переменную» → <b>Текущая геопозиция</b> → нажмите на неё → <b>Широта</b>. Допишите <code>&amp;lng=</code> и так же вставьте <b>Долготу</b>.
+              </li>
+              <li>Добавьте действие <b>«Показать уведомление»</b> → в текст поставьте переменную <b>«Содержимое URL»</b>. Так вы увидите «✅ Приход 08:57».</li>
+              <li>Создайте вторую команду <b>TK Уход</b> точно так же, но со ссылкой:
+                <Copy id="out" text={urlFor('out')} label="Копировать" />
+              </li>
+            </ol>
+          )}
+          {!key && <p className="muted small">Сначала нажмите «Получить ключ» выше — он подставится в ссылки.</p>}
+          <p className="small"><b>Шаг 2. Автоматизации</b></p>
           <ol className="steps">
-            <li><b>Войдите в Timekeeper в Safari</b>: откройте <code>{base.replace(/^https?:\/\//, '')}</code> в Safari и войдите (один раз). Ссылки из «Команд» открываются в Safari.</li>
-            <li>Разрешите геолокацию: <b>Настройки → Приложения → Safari → Геопозиция → «Разрешить»</b> (или «Спросить» и затем «Разрешить» на сайте).</li>
-            <li>Откройте приложение <b>«Команды»</b> → вкладка <b>«Автоматизация»</b> → <b>«+»</b> (или «Новая автоматизация»).</li>
-            <li>Выберите <b>«Прибытие»</b> → «Геопозиция: Выбрать» → найдите адрес объекта (выше), радиус ~150 м → «Готово».</li>
-            <li>Время: <b>«Диапазон времени»</b>, например 07:00–11:00 — чтобы напоминание приходило только утром.</li>
-            <li>Выберите <b>«Запускать после подтверждения»</b> — iPhone пришлёт уведомление, отметка будет только после вашего нажатия. → «Далее».</li>
-            <li>«Новая пустая автоматизация» → «Добавить действие» → найдите <b>«Открыть URL»</b> → вставьте ссылку <b>прихода</b>:
-              <LinkBox k="in" label="приход" />
-            </li>
-            <li>Повторите для <b>«Уход»</b>: тот же адрес, время например 12:00–21:00, действие «Открыть URL» со ссылкой <b>ухода</b>:
-              <LinkBox k="out" label="уход" />
-            </li>
+            <li>«Команды» → вкладка <b>«Автоматизация»</b> → <b>«+»</b> → <b>«Прибытие»</b>.</li>
+            <li>«Геопозиция» → найдите адрес объекта (выше), радиус ~150 м → «Готово». Время — «В любое время».</li>
+            <li>Выберите <b>«Запускать сразу»</b> (не «после подтверждения») → «Далее» → выберите команду <b>TK Приход</b>.</li>
+            <li>Повторите: <b>«Уход»</b> с того же адреса → «Запускать сразу» → команда <b>TK Уход</b>.</li>
           </ol>
-          <p className="muted small">Если объектов несколько — создайте автоматизации для каждого. В выходные уведомление можно просто смахнуть: без нажатия ничего не отмечается.</p>
+          <p className="muted small">Готово: приход и уход будут отмечаться сами. Вне рабочего времени отметки тоже ставятся — если пришли в выходной, это будет видно в табеле.</p>
         </div>
       )}
 
       {(isAndroid || !isIOS) && (
         <div className="card">
           <h3>🤖 Android</h3>
-          <p>Готовим приложение, которое будет само присылать уведомление при прибытии на объект. Пока отмечайтесь кнопкой <b>«Отметиться по геолокации»</b> в приложении — это одно нажатие.</p>
+          <p>Откройте Timekeeper на объекте — приход отметится сам, нажимать ничего не нужно. Приложение, которое будет отмечать и в закрытом виде, готовим.</p>
         </div>
       )}
 
-      <div className="card">
-        <h3>Проверка</h3>
-        <p className="muted small">Находясь на объекте, откройте ссылку прихода — должен появиться экран «Приход». Если вы уже отмечены, будет «Приход уже отмечен» — повторной отметки не будет.</p>
-        <Link className="btn primary block" to="/me">Готово</Link>
-      </div>
+      <Link className="btn primary block" to="/me">Готово</Link>
     </div>
   )
 }
