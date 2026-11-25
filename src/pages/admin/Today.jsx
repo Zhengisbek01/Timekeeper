@@ -170,7 +170,7 @@ export default function Today() {
             </table>
           </div>
         )}
-        <p className="muted small" style={{ marginBottom: 0 }}>→ приход · ← уход (после точки — причина выхода) · ☺ по Face ID · 📍 по геолокации · ✎ отметка поставлена HR вручную (наведите, чтобы увидеть основание)</p>
+        <p className="muted small" style={{ marginBottom: 0 }}>→ приход · ← уход (после точки — причина выхода) · 📍 по геолокации · ✎ отметка поставлена HR вручную (наведите, чтобы увидеть основание)</p>
       </div>
       {edit && <DayEditor emp={edit} day={day} onClose={() => setEdit(null)} onChanged={load} />}
     </>

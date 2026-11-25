@@ -43,12 +43,12 @@ export default function Kiosks() {
         <input required placeholder="Название, напр. «Главный вход»" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} style={{ flex: 1, minWidth: 200 }} />
         <input required placeholder="Логин: kiosk-main" pattern="[a-z0-9\-]{3,32}" title="латиница в нижнем регистре, цифры, дефис"
           value={f.login} onChange={(e) => setF({ ...f, login: e.target.value.toLowerCase() })} style={{ width: 180 }} />
-        <button className="btn primary">+ Киоск</button>
+        <button className="btn primary">+ Объект</button>
       </form>
-      <p className="muted small">На планшете откройте <code>{window.location.origin}/kiosk</code> → «Активация» → логин, код и новый пароль. Дальше планшет остаётся в системе; при выходе — «Вход» с логином и паролем.</p>
+      <p className="muted small">Объект — офис или площадка, где работники отмечаются по геолокации. Создайте запись (название и любой логин), затем у неё нажмите «задать» и укажите адрес, точку и радиус. Активировать запись не нужно.</p>
       {err && <div className="alert err">{err}</div>}
       <table className="tbl">
-        <thead><tr><th>Киоск</th><th>Логин</th><th>Учётная запись</th><th>Геозона (Face ID, геолокация)</th><th></th></tr></thead>
+        <thead><tr><th>Объект</th><th>Логин</th><th>Учётная запись</th><th>Геозона</th><th></th></tr></thead>
         <tbody>
           {list.map((k) => (
             <tr key={k.id} className={k.active ? '' : 'dim'}>
@@ -130,7 +130,7 @@ function GeoEditor({ geo, onClose, onSaved }) {
     <div className="modal-bg" onClick={onClose}>
       <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={save}>
         <h3>«{geo.name}» — геозона</h3>
-        <p className="muted small">Отметки по Face ID и геолокации принимаются только в этом радиусе. Для объекта без планшета тоже создайте здесь запись (активировать её не нужно). Проще всего: встаньте у входа с телефоном и нажмите «Мои координаты сейчас».</p>
+        <p className="muted small">Отметки по геолокации принимаются только в этом радиусе. Проще всего: встаньте у входа с телефоном и нажмите «Мои координаты сейчас».</p>
         <button type="button" className="btn block" onClick={here} disabled={busy}>{busy ? 'Определяем…' : '📍 Мои координаты сейчас'}</button>
         <div className="grid2" style={{ marginTop: 10 }}>
           <label className="span2">Адрес (работники увидят его в инструкции)<input placeholder="г. Астана, ул. …" value={f.address} onChange={set('address')} /></label>
