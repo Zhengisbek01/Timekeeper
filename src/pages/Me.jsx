@@ -40,7 +40,7 @@ export default function Me() {
         <div className={`status-icon ${employee.status === 'pending' ? 'wait' : 'bad'}`}>{employee.status === 'pending' ? '⏳' : '✕'}</div>
         <h2>{employee.status === 'pending' ? 'Заявка на рассмотрении' : 'Доступ закрыт'}</h2>
         <p className="muted">{employee.status === 'pending'
-          ? 'Отдел кадров проверяет ваши данные. После подтверждения вы сможете отмечаться по QR-коду на входе.'
+          ? 'Отдел кадров проверяет ваши данные. После подтверждения приход будет отмечаться автоматически, когда вы на объекте.'
           : 'Обратитесь в отдел кадров.'}</p>
         <dl className="kv">
           <dt>ФИО</dt><dd>{employee.full_name}</dd>

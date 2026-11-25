@@ -17,7 +17,7 @@ export default function GeoConsent({ onDone, onCancel }) {
       <ul className="face-points">
         <li>📍 Местоположение определяется <b>только в момент отметки</b> — чтобы проверить, что вы на объекте.</li>
         <li>🚫 Мы <b>не отслеживаем</b> перемещения и не храним координаты: в отметке остаются объект и расстояние до него.</li>
-        <li>↩️ Отключить геолокацию и вернуться к QR можно в любой момент.</li>
+        <li>⏱️ Приход отмечается сам, когда вы на объекте. Отозвать согласие можно в любой момент.</li>
       </ul>
       <label className="inline consent">
         <input type="checkbox" required checked={agree} onChange={(e) => setAgree(e.target.checked)} />
