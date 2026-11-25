@@ -2,6 +2,14 @@
 import { supabase, errText } from './supabase'
 import { getPosition } from './faceid'
 
+// Состояние разрешения на геопозицию: 'granted' | 'prompt' | 'denied' | 'unknown' (без запроса пользователю)
+export async function geoPermission() {
+  try {
+    const r = await navigator.permissions.query({ name: 'geolocation' })
+    return r.state
+  } catch { return 'unknown' }
+}
+
 // точнее, чем одно измерение: ждём до ~12 с, пока GPS уточнится
 export function getGoodPosition(maxWait = 12000) {
   return new Promise((resolve, reject) => {
